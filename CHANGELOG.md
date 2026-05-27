@@ -18,3 +18,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added the V1 rules engine and default CLI findings scan path.
 - Added CLI report formats, `--write-report`, `--fail-on`, `list-rules`, and `explain <rule-id>`.
 - Added inline and config-file suppressions with required reasons and report counts.
+- Added the GitHub Action wrapper, job summary output, report artifact upload, and workflow examples.

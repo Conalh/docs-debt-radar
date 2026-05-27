@@ -1,0 +1,84 @@
+name: Docs Debt Radar
+description: Scan repository documentation for evidence-backed docs debt findings.
+
+inputs:
+  path:
+    description: Repository path to scan.
+    required: false
+    default: "."
+  fail-on:
+    description: Severity threshold that should fail the workflow. Use none for report-only mode.
+    required: false
+    default: "none"
+  report-format:
+    description: Report artifact format. Supported values are markdown and json.
+    required: false
+    default: "markdown"
+  docs:
+    description: Optional newline- or comma-separated Markdown docs paths to scan.
+    required: false
+    default: ""
+  changed-only:
+    description: Reserved for changed-file scanning once the CLI supports it.
+    required: false
+    default: "false"
+  report-path:
+    description: Path where the report artifact content should be written.
+    required: false
+    default: "docs-debt-report.md"
+  artifact-name:
+    description: Name for the uploaded report artifact.
+    required: false
+    default: "docs-debt-report"
+
+outputs:
+  exit-code:
+    description: Exit code returned by the docs debt scan.
+    value: ${{ steps.scan.outputs.exit-code }}
+  report-path:
+    description: Path to the generated report.
+    value: ${{ steps.scan.outputs.report-path }}
+  total-findings:
+    description: Total visible findings in the report.
+    value: ${{ steps.scan.outputs.total-findings }}
+  suppressed-findings:
+    description: Total suppressed findings in the report.
+    value: ${{ steps.scan.outputs.suppressed-findings }}
+
+runs:
+  using: composite
+  steps:
+    - name: Enable pnpm
+      shell: bash
+      run: corepack enable pnpm
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: pnpm install --frozen-lockfile
+
+    - name: Build scanner
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: pnpm --filter @docs-debt-radar/cli build && pnpm --filter @docs-debt-radar/action build
+
+    - name: Run docs debt scan
+      id: scan
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_REPORT_FORMAT: ${{ inputs.report-format }}
+        INPUT_DOCS: ${{ inputs.docs }}
+        INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
+        INPUT_REPORT_PATH: ${{ inputs.report-path }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
+      run: node "$GITHUB_ACTION_PATH/apps/action/dist/index.js"
+
+    - name: Upload docs debt report
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.report-path }}
+        if-no-files-found: ignore

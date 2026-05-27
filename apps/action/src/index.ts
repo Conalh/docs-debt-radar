@@ -11,6 +11,7 @@ export interface ActionInputs {
   reportFormat: ReportFormat;
   docsPaths: string[];
   changedOnly: boolean;
+  checkExternalLinks: boolean;
   reportPath: string;
   artifactName: string;
 }
@@ -47,6 +48,7 @@ export function normalizeInputs(env: Record<string, string | undefined>): Action
     reportFormat: normalizeReportFormat(readInput(env, "report-format", "markdown")),
     docsPaths: splitInputList(readInput(env, "docs", "")),
     changedOnly: readInput(env, "changed-only", "false").toLowerCase() === "true",
+    checkExternalLinks: readInput(env, "check-external-links", "false").toLowerCase() === "true",
     reportPath: readInput(env, "report-path", "docs-debt-report.md"),
     artifactName: readInput(env, "artifact-name", "docs-debt-report")
   };
@@ -61,6 +63,7 @@ export function buildCliArgs(input: ActionInputs): string[] | Error {
     "--fail-on",
     input.failOn,
     ...(input.changedOnly ? ["--changed-only"] : []),
+    ...(input.checkExternalLinks ? ["--check-external-links"] : []),
     ...(input.docsPaths.length > 0 ? ["--docs", ...input.docsPaths] : [])
   ];
 }

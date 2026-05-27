@@ -4,18 +4,19 @@ Docs Debt Radar is intentionally small in V1. Most behavior is controlled throug
 
 ## CLI Options
 
-| Option                  | Purpose                                                          |
-| ----------------------- | ---------------------------------------------------------------- |
-| `--format text`         | Compact terminal finding lines.                                  |
-| `--format markdown`     | Human-readable Markdown report.                                  |
-| `--format json`         | Full structured scan report.                                     |
-| `--format sarif`        | SARIF 2.1.0 report for code-scanning compatible consumers.       |
-| `--write-report <path>` | Write the selected output format to disk.                        |
-| `--fail-on <threshold>` | Return exit code `1` when a visible finding meets the threshold. |
-| `--docs <path...>`      | Restrict Markdown docs scanned for claims.                       |
-| `--changed-only`        | Scan only changed Markdown docs reported by `git status`.        |
-| `--claims`              | Print extracted Markdown claims for debugging.                   |
-| `--facts`               | Print extracted repository facts for debugging.                  |
+| Option                   | Purpose                                                          |
+| ------------------------ | ---------------------------------------------------------------- |
+| `--format text`          | Compact terminal finding lines.                                  |
+| `--format markdown`      | Human-readable Markdown report.                                  |
+| `--format json`          | Full structured scan report.                                     |
+| `--format sarif`         | SARIF 2.1.0 report for code-scanning compatible consumers.       |
+| `--write-report <path>`  | Write the selected output format to disk.                        |
+| `--fail-on <threshold>`  | Return exit code `1` when a visible finding meets the threshold. |
+| `--docs <path...>`       | Restrict Markdown docs scanned for claims.                       |
+| `--changed-only`         | Scan only changed Markdown docs reported by `git status`.        |
+| `--check-external-links` | Opt in to network checks for external Markdown links.            |
+| `--claims`               | Print extracted Markdown claims for debugging.                   |
+| `--facts`                | Print extracted repository facts for debugging.                  |
 
 Valid fail thresholds are `none`, `info`, `low`, `medium`, and `high`.
 
@@ -45,19 +46,20 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 
 ## GitHub Action Inputs
 
-| Input           | Default               | Purpose                                          |
-| --------------- | --------------------- | ------------------------------------------------ |
-| `path`          | `.`                   | Repository path to scan.                         |
-| `fail-on`       | `none`                | Severity threshold that fails the workflow.      |
-| `report-format` | `markdown`            | Report artifact format.                          |
-| `docs`          | empty                 | Newline- or comma-separated Markdown docs paths. |
-| `changed-only`  | `false`               | Scan only changed Markdown docs from git status. |
-| `report-path`   | `docs-debt-report.md` | Generated report path.                           |
-| `artifact-name` | `docs-debt-report`    | Uploaded artifact name.                          |
+| Input                  | Default               | Purpose                                          |
+| ---------------------- | --------------------- | ------------------------------------------------ |
+| `path`                 | `.`                   | Repository path to scan.                         |
+| `fail-on`              | `none`                | Severity threshold that fails the workflow.      |
+| `report-format`        | `markdown`            | Report artifact format.                          |
+| `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths. |
+| `changed-only`         | `false`               | Scan only changed Markdown docs from git status. |
+| `check-external-links` | `false`               | Opt in to network checks for external links.     |
+| `report-path`          | `docs-debt-report.md` | Generated report path.                           |
+| `artifact-name`        | `docs-debt-report`    | Uploaded artifact name.                          |
 
 ## Current Limits
 
 - `changed-only` requires the scanned path to be inside a Git repository.
-- External URL checking is out of V1 scope.
+- External URL checking is disabled by default and only runs with `--check-external-links`.
 - The scanner does not run documented commands.
 - Route extraction is limited to supported Next.js, FastAPI, and Express conventions.

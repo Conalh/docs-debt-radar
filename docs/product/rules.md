@@ -13,6 +13,7 @@ Rules compare documentation claims with repository facts. Every finding includes
 | `stale-route-mention`                | medium           | Docs mention a route not found by supported route extractors.                  |
 | `broken-markdown-anchor`             | medium           | A Markdown link points to a missing heading anchor.                            |
 | `missing-screenshot`                 | medium           | Docs reference an image path that is not present.                              |
+| `external-link-unreachable`          | low              | An opted-in external link check returns a failed status or request error.      |
 | `workflow-references-missing-script` | high             | A GitHub Actions workflow runs a package script that is missing.               |
 
 ## Inspect Rules Locally

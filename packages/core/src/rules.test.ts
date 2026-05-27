@@ -100,6 +100,37 @@ describe("scanDocsDebt", () => {
       ])
     );
   });
+
+  it("checks external links only when explicitly enabled", async () => {
+    const fixtureRoot = join(process.cwd(), "tests/fixtures/external-link-drift");
+    const offlineReport = await scanDocsDebt({
+      root: fixtureRoot,
+      scannerVersion: "0.0.0-test",
+      scannedAt: "2026-05-27T00:00:00.000Z"
+    });
+    const checkedReport = await scanDocsDebt({
+      root: fixtureRoot,
+      scannerVersion: "0.0.0-test",
+      scannedAt: "2026-05-27T00:00:00.000Z",
+      checkExternalLinks: true,
+      externalLinkChecker: async (url) => ({
+        ok: !url.endsWith("/missing"),
+        status: url.endsWith("/missing") ? 404 : 200
+      })
+    });
+
+    expect(offlineReport.findingsJson).toEqual([]);
+    expect(checkedReport.findingsJson).toEqual([
+      expect.objectContaining({
+        ruleId: "external-link-unreachable",
+        severity: "low",
+        title: "External link could not be reached",
+        documentPath: "README.md",
+        documentLine: 4,
+        suggestedEdit: "Update or remove the external link to https://example.test/missing."
+      })
+    ]);
+  });
 });
 
 function compareExpectedFindings(

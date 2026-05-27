@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createServer, type Server } from "node:http";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,15 +9,18 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createCliHelp, runCli } from "./index.js";
 
 const tempDirs: string[] = [];
+const servers: Server[] = [];
 
 afterEach(async () => {
   await Promise.all(tempDirs.splice(0).map((path) => rm(path, { recursive: true, force: true })));
+  await Promise.all(servers.splice(0).map((server) => closeServer(server)));
 });
 
 describe("createCliHelp", () => {
   it("documents the initial scan command surface", () => {
     expect(createCliHelp()).toContain("docs-debt-radar scan <path>");
     expect(createCliHelp()).toContain("--format <text|markdown|json|sarif>");
+    expect(createCliHelp()).toContain("--check-external-links");
     expect(createCliHelp()).toContain("--fail-on <none|info|low|medium|high>");
   });
 
@@ -285,6 +289,42 @@ describe("createCliHelp", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("checks external links only when --check-external-links is set", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "docs-debt-radar-links-"));
+    tempDirs.push(tempDir);
+    const { server, url } = await startLinkServer();
+    servers.push(server);
+    await writeFile(
+      join(tempDir, "README.md"),
+      ["# Links", "", `Read [ok](${url}/ok).`, `Read [missing](${url}/missing).`].join("\n"),
+      "utf8"
+    );
+
+    const offlineResult = await runCli(["scan", tempDir, "--format", "json"]);
+    const checkedResult = await runCli([
+      "scan",
+      tempDir,
+      "--format",
+      "json",
+      "--check-external-links"
+    ]);
+
+    expect(JSON.parse(offlineResult.stdout)).toMatchObject({
+      summaryJson: { totalFindings: 0 }
+    });
+    expect(JSON.parse(checkedResult.stdout)).toMatchObject({
+      summaryJson: { totalFindings: 1 },
+      findingsJson: [
+        expect.objectContaining({
+          ruleId: "external-link-unreachable",
+          documentLine: 4
+        })
+      ]
+    });
+    expect(offlineResult.stderr).toBe("");
+    expect(checkedResult.stderr).toBe("");
+  });
+
   it("returns exit code 1 when findings meet the fail threshold", async () => {
     const result = await runCli([
       "scan",
@@ -325,4 +365,33 @@ function runGit(cwd: string, args: string[]): void {
   if (result.status !== 0) {
     throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
   }
+}
+
+async function startLinkServer(): Promise<{ server: Server; url: string }> {
+  const server = createServer((request, response) => {
+    response.statusCode = request.url === "/missing" ? 404 : 200;
+    response.end();
+  });
+  await new Promise<void>((resolve) => {
+    server.listen(0, "127.0.0.1", resolve);
+  });
+  const address = server.address();
+  if (address === null || typeof address === "string") {
+    throw new Error("Unable to start test link server.");
+  }
+
+  return { server, url: `http://127.0.0.1:${address.port}` };
+}
+
+async function closeServer(server: Server): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
 }

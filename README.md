@@ -132,6 +132,7 @@ docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
 docs-debt-radar scan . --docs README.md docs/setup.md
 docs-debt-radar scan . --changed-only
+docs-debt-radar scan . --check-external-links
 docs-debt-radar scan . --fail-on high
 ```
 
@@ -143,6 +144,7 @@ Exit codes:
 
 Use `--format sarif` when you want a code-scanning compatible report with finding locations, rule metadata, and suggested edits.
 Use `--changed-only` to scan only Markdown docs reported by `git status`, while still comparing them against facts from the whole repository.
+Use `--check-external-links` when you explicitly want network checks for external Markdown links.
 
 ## Suppressions
 

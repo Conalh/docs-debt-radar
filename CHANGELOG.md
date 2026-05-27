@@ -25,3 +25,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added SARIF 2.1.0 output for code-scanning compatible docs debt reports.
 - Added `--changed-only` scanning for changed Markdown docs while preserving full-repository fact extraction.
 - Added Express route extraction for literal app/router route calls and stale route reporting.
+- Added opt-in external link checking for Markdown links in the CLI and GitHub Action.

@@ -12,6 +12,7 @@ docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
 docs-debt-radar scan . --changed-only
+docs-debt-radar scan . --check-external-links
 ```
 
 Development inspection helpers:
@@ -66,3 +67,13 @@ Combine it with `--docs` to limit the changed-doc scan to a known docs surface:
 ```bash
 docs-debt-radar scan . --changed-only --docs README.md docs/
 ```
+
+## External Link Checks
+
+External URL checks are opt-in so normal local scans stay offline:
+
+```bash
+docs-debt-radar scan . --check-external-links
+```
+
+The check reports unsuccessful HTTP statuses or request failures as low-severity `external-link-unreachable` findings. External sites can rate-limit, block, or temporarily fail automated checks, so suppress known exceptions with reasons instead of enabling this as a hard CI gate on day one.

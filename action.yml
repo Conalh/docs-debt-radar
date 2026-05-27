@@ -22,6 +22,10 @@ inputs:
     description: Scan only changed Markdown docs reported by git status.
     required: false
     default: "false"
+  check-external-links:
+    description: Check external Markdown links with network requests.
+    required: false
+    default: "false"
   report-path:
     description: Path where the report artifact content should be written.
     required: false
@@ -71,6 +75,7 @@ runs:
         INPUT_REPORT_FORMAT: ${{ inputs.report-format }}
         INPUT_DOCS: ${{ inputs.docs }}
         INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
+        INPUT_CHECK_EXTERNAL_LINKS: ${{ inputs.check-external-links }}
         INPUT_REPORT_PATH: ${{ inputs.report-path }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
       run: node "$GITHUB_ACTION_PATH/apps/action/dist/index.js"

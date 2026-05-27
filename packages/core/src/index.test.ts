@@ -18,6 +18,7 @@ describe("evidence model", () => {
       docsGlobs: ["README.md", "docs/**/*.md"],
       ignoreGlobs: ["node_modules/**"],
       changedOnly: false,
+      checkExternalLinks: false,
       failOn: "high",
       outputFormat: "json",
       maxFileSizeBytes: 1000000

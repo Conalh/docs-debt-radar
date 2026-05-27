@@ -20,7 +20,7 @@ V1 should prove that documentation drift can be detected with local, evidence-ba
 
 - Running arbitrary commands from docs or workflows.
 - Rewriting docs automatically.
-- External link crawling by default.
+- External link crawling by default. Post-V1 scans can opt in with `--check-external-links`.
 - Business-domain truth checks.
 - Full natural-language understanding of all prose.
 - Private hosted dashboards.

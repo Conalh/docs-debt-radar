@@ -13,6 +13,7 @@ describe("GitHub Action wrapper", () => {
       reportFormat: "markdown",
       docsPaths: [],
       changedOnly: false,
+      checkExternalLinks: false,
       reportPath: "docs-debt-report.md",
       artifactName: "docs-debt-report"
     });
@@ -26,6 +27,7 @@ describe("GitHub Action wrapper", () => {
         reportFormat: "markdown",
         docsPaths: ["README.md", "docs"],
         changedOnly: false,
+        checkExternalLinks: true,
         reportPath: "docs-debt-report.md",
         artifactName: "docs-debt-report"
       })
@@ -36,6 +38,7 @@ describe("GitHub Action wrapper", () => {
       "json",
       "--fail-on",
       "high",
+      "--check-external-links",
       "--docs",
       "README.md",
       "docs"
@@ -50,6 +53,7 @@ describe("GitHub Action wrapper", () => {
         reportFormat: "markdown",
         docsPaths: [],
         changedOnly: true,
+        checkExternalLinks: false,
         reportPath: "docs-debt-report.md",
         artifactName: "docs-debt-report"
       })
@@ -113,6 +117,7 @@ describe("action.yml", () => {
     expect(metadata).toContain("report-format:");
     expect(metadata).toContain("docs:");
     expect(metadata).toContain("changed-only:");
+    expect(metadata).toContain("check-external-links:");
     expect(metadata).toContain("actions/upload-artifact@v4");
     expect(metadata).toContain("working-directory: ${{ github.action_path }}");
     expect(metadata).toContain('node "$GITHUB_ACTION_PATH/apps/action/dist/index.js"');

@@ -47,21 +47,24 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 
 ## GitHub Action Inputs
 
-| Input                  | Default               | Purpose                                          |
-| ---------------------- | --------------------- | ------------------------------------------------ |
-| `path`                 | `.`                   | Repository path to scan.                         |
-| `fail-on`              | `none`                | Severity threshold that fails the workflow.      |
-| `report-format`        | `markdown`            | Report artifact format.                          |
-| `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths. |
-| `changed-only`         | `false`               | Scan only changed Markdown docs from git status. |
-| `check-external-links` | `false`               | Opt in to network checks for external links.     |
-| `report-path`          | `docs-debt-report.md` | Generated report path.                           |
-| `artifact-name`        | `docs-debt-report`    | Uploaded artifact name.                          |
+| Input                  | Default               | Purpose                                           |
+| ---------------------- | --------------------- | ------------------------------------------------- |
+| `path`                 | `.`                   | Repository path to scan.                          |
+| `fail-on`              | `none`                | Severity threshold that fails the workflow.       |
+| `report-format`        | `markdown`            | Report artifact format.                           |
+| `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths.  |
+| `changed-only`         | `false`               | Scan only changed Markdown docs from git status.  |
+| `check-external-links` | `false`               | Opt in to network checks for external links.      |
+| `pr-comment`           | `false`               | Post a pull request summary comment when enabled. |
+| `github-token`         | empty                 | Token used for opt-in pull request comments.      |
+| `report-path`          | `docs-debt-report.md` | Generated report path.                            |
+| `artifact-name`        | `docs-debt-report`    | Uploaded artifact name.                           |
 
 ## Current Limits
 
 - `changed-only` requires the scanned path to be inside a Git repository.
 - External URL checking is disabled by default and only runs with `--check-external-links`.
 - Patch output is advisory and only covers conservative single-line documentation edits.
+- Pull request comments are disabled by default and require `pr-comment: true` plus `github-token`.
 - The scanner does not run documented commands.
 - Route extraction is limited to supported Next.js, FastAPI, and Express conventions.

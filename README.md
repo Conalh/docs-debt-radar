@@ -48,6 +48,19 @@ Use it in GitHub Actions:
     fail-on: high
 ```
 
+Opt in to pull request comments when you want the summary on the PR itself:
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+
+- uses: conalh/docs-debt-radar@v1
+  with:
+    pr-comment: true
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ## Demo
 
 Before:

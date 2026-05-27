@@ -19,3 +19,16 @@ Fail on high-severity findings:
 ```
 
 The Action writes a Markdown job summary and uploads the generated report artifact. See [GitHub Action product docs](../../docs/product/github-action.md) for all inputs, outputs, and examples.
+
+Pull request comments are opt-in:
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+
+- uses: conalh/docs-debt-radar@v1
+  with:
+    pr-comment: true
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```

@@ -36,16 +36,18 @@ Supported thresholds are `none`, `info`, `low`, `medium`, and `high`.
 
 ## Inputs
 
-| Input                  | Default               | Purpose                                          |
-| ---------------------- | --------------------- | ------------------------------------------------ |
-| `path`                 | `.`                   | Repository path to scan.                         |
-| `fail-on`              | `none`                | Severity threshold that fails the workflow.      |
-| `report-format`        | `markdown`            | Report artifact format: `markdown` or `json`.    |
-| `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths. |
-| `changed-only`         | `false`               | Scan only changed Markdown docs from git status. |
-| `check-external-links` | `false`               | Opt in to network checks for external links.     |
-| `report-path`          | `docs-debt-report.md` | Path for the generated report artifact.          |
-| `artifact-name`        | `docs-debt-report`    | Uploaded artifact name.                          |
+| Input                  | Default               | Purpose                                           |
+| ---------------------- | --------------------- | ------------------------------------------------- |
+| `path`                 | `.`                   | Repository path to scan.                          |
+| `fail-on`              | `none`                | Severity threshold that fails the workflow.       |
+| `report-format`        | `markdown`            | Report artifact format: `markdown` or `json`.     |
+| `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths.  |
+| `changed-only`         | `false`               | Scan only changed Markdown docs from git status.  |
+| `check-external-links` | `false`               | Opt in to network checks for external links.      |
+| `pr-comment`           | `false`               | Post a pull request summary comment when enabled. |
+| `github-token`         | empty                 | Token used for opt-in pull request comments.      |
+| `report-path`          | `docs-debt-report.md` | Path for the generated report artifact.           |
+| `artifact-name`        | `docs-debt-report`    | Uploaded artifact name.                           |
 
 ## Outputs
 
@@ -71,6 +73,23 @@ Restrict scanning to selected docs:
 ## Artifacts and Summary
 
 The Action always attempts to upload the generated report artifact, even when `fail-on` makes the scan step return exit code `1`. The job summary includes severity counts, warning counts, suppression counts, and the first ten visible findings.
+
+## Pull Request Comments
+
+Set `pr-comment: true` to post the same concise summary as a pull request comment. This is opt-in because it needs a token with permission to write PR issue comments.
+
+```yaml
+permissions:
+  contents: read
+  pull-requests: write
+
+- uses: conalh/docs-debt-radar@v1
+  with:
+    pr-comment: true
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+The comment includes a stable marker, severity counts, suppression and warning counts, and the first ten visible findings.
 
 ## Changed-Only Scope
 

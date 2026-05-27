@@ -26,6 +26,14 @@ inputs:
     description: Check external Markdown links with network requests.
     required: false
     default: "false"
+  pr-comment:
+    description: Post a Docs Debt Radar summary comment on pull requests.
+    required: false
+    default: "false"
+  github-token:
+    description: GitHub token used when pr-comment is enabled.
+    required: false
+    default: ""
   report-path:
     description: Path where the report artifact content should be written.
     required: false
@@ -76,6 +84,8 @@ runs:
         INPUT_DOCS: ${{ inputs.docs }}
         INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
         INPUT_CHECK_EXTERNAL_LINKS: ${{ inputs.check-external-links }}
+        INPUT_PR_COMMENT: ${{ inputs.pr-comment }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
         INPUT_REPORT_PATH: ${{ inputs.report-path }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact-name }}
       run: node "$GITHUB_ACTION_PATH/apps/action/dist/index.js"

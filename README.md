@@ -165,6 +165,7 @@ Open `apps/web/index.html` and load a JSON report. The viewer is optional; the C
 - [Next.js](docs/examples/nextjs.md)
 - [FastAPI](docs/examples/fastapi.md)
 - [GitHub Actions workflow](docs/examples/github-actions.md)
+- [Release readiness](docs/product/release-readiness.md)
 
 ## Development
 
@@ -175,6 +176,8 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm pack:dry-run
+pnpm smoke:packed
 ```
 
 Project layout:
@@ -188,8 +191,8 @@ packages/core  Scanner models, extractors, rules, and reports
 
 ## Status
 
-Prototype / early alpha. The CLI, Action wrapper, suppressions, V1 rules, fixtures, sample reports, and static viewer exist. Release packaging, remote Action validation, and npm publishing are still future work.
+Prototype / early alpha. The CLI, Action wrapper, suppressions, V1 rules, fixtures, sample reports, static viewer, package surface audit, and packed CLI smoke exist. Remote Action validation and npm publishing are still future work.
 
 ## License
 
-License has not been selected yet.
+MIT.

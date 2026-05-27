@@ -1,10 +1,25 @@
 {
   "name": "@docs-debt-radar/cli",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
+  "description": "Command-line scanner for evidence-backed documentation drift reports.",
+  "license": "MIT",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "docs-debt-radar": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -12,6 +27,6 @@
     "typecheck": "pnpm --filter @docs-debt-radar/core build && tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@docs-debt-radar/core": "workspace:*"
+    "@docs-debt-radar/core": "workspace:0.0.0"
   }
 }

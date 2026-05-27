@@ -40,3 +40,12 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Audit package contents
+        run: pnpm pack:dry-run
+
+      - name: Smoke packed CLI
+        run: pnpm smoke:packed

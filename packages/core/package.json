@@ -1,15 +1,28 @@
 {
   "name": "@docs-debt-radar/core",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
+  "description": "Core scanner, evidence model, extractors, rules, and report renderers for Docs Debt Radar.",
+  "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
-      "types": "./src/index.ts",
+      "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

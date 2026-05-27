@@ -21,3 +21,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added the GitHub Action wrapper, job summary output, report artifact upload, and workflow examples.
 - Reworked the public README and added demo reports, configuration docs, rule docs, and project-shape examples.
 - Added the optional static report viewer for local JSON report inspection.
+- Added release-readiness packaging metadata, package surface audits, packed CLI smoke tests, compatibility notes, and an MIT license.

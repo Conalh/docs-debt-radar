@@ -42,3 +42,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added Flask Blueprint `url_prefix` route extraction for literal prefixes.
 - Added Express mounted router prefix extraction for literal `app.use()` mounts.
 - Added NestJS controller route extraction for literal decorators.
+- Added Hono route extraction for literal app and mounted app calls.

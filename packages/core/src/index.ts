@@ -1070,6 +1070,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isDjango = routeFacts.some((fact) => fact.metadataJson.framework === "django");
   const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
   const isNestJs = routeFacts.some((fact) => fact.metadataJson.framework === "nestjs");
+  const isHono = routeFacts.some((fact) => fact.metadataJson.framework === "hono");
   const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
@@ -1080,12 +1081,20 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
       return createFinding({
         ruleId: "stale-route-mention",
         severity: "medium",
-        title: routeMissingTitle({ isFastApi, isFlask, isDjango, isExpress, isNestJs, isNextJs }),
+        title: routeMissingTitle({
+          isFastApi,
+          isFlask,
+          isDjango,
+          isExpress,
+          isNestJs,
+          isHono,
+          isNextJs
+        }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isFlask || isDjango || isExpress || isNestJs
+          isFastApi || isFlask || isDjango || isExpress || isNestJs || isHono
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1100,6 +1109,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isDjango,
           isExpress,
           isNestJs,
+          isHono,
           isNextJs
         }),
         falsePositiveNote:
@@ -1114,6 +1124,7 @@ function routeMissingTitle(input: {
   isDjango: boolean;
   isExpress: boolean;
   isNestJs: boolean;
+  isHono: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1136,6 +1147,10 @@ function routeMissingTitle(input: {
     return "Documented NestJS route was not found";
   }
 
+  if (input.isHono) {
+    return "Documented Hono route was not found";
+  }
+
   if (input.isNextJs) {
     return "Documented Next.js route was not found";
   }
@@ -1150,6 +1165,7 @@ function routeMissingSuggestion(input: {
   isDjango: boolean;
   isExpress: boolean;
   isNestJs: boolean;
+  isHono: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1170,6 +1186,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isNestJs) {
     return "Update the route mention or add the missing NestJS controller route.";
+  }
+
+  if (input.isHono) {
+    return "Update the route mention or add the missing Hono route.";
   }
 
   if (input.isNextJs) {
@@ -1917,6 +1937,20 @@ async function extractRouteFacts(
           );
         }
       }
+
+      if (looksLikeHonoSource(text)) {
+        for (const route of extractHonoRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "hono", method: route.method }
+            })
+          );
+        }
+      }
     }
   }
 
@@ -2217,6 +2251,65 @@ function extractNestJsRoutes(
   }
 
   return routes;
+}
+
+function looksLikeHonoSource(text: string): boolean {
+  return /\bfrom\s+["']hono["']|\brequire\(\s*["']hono["']\s*\)|\bnew\s+Hono\(/.test(text);
+}
+
+function extractHonoRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const appPrefixes = extractHonoAppPrefixes(text);
+  const routePattern =
+    /\b(\w+)\.(get|post|put|patch|delete|options|all|on)\(\s*["'`]([^"'`]+)["'`]/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    routePattern.lastIndex = 0;
+    const match = routePattern.exec(line);
+    if (match?.[1] && match[2] && match[3] && appPrefixes.has(match[1])) {
+      routes.push({
+        method: match[2],
+        path: combineRouteParts(appPrefixes.get(match[1]) ?? "", match[3]),
+        lineNumber: lineIndex + 1
+      });
+    }
+  }
+
+  return routes;
+}
+
+function extractHonoAppPrefixes(text: string): Map<string, string> {
+  const appNames = new Set<string>();
+  const prefixes = new Map<string, string>();
+  const appPattern = /\b(?:const|let|var)\s+(\w+)\s*=\s*new\s+Hono\(/g;
+  const routeMountPattern = /\b(\w+)\.route\(\s*["'`]([^"'`]+)["'`]\s*,\s*(\w+)/g;
+
+  for (const line of text.split(/\r?\n/)) {
+    appPattern.lastIndex = 0;
+    const appMatch = appPattern.exec(line);
+    if (appMatch?.[1]) {
+      appNames.add(appMatch[1]);
+      prefixes.set(appMatch[1], "");
+    }
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    routeMountPattern.lastIndex = 0;
+    const mountMatch = routeMountPattern.exec(line);
+    if (
+      mountMatch?.[1] &&
+      mountMatch[2] &&
+      mountMatch[3] &&
+      appNames.has(mountMatch[1]) &&
+      appNames.has(mountMatch[3])
+    ) {
+      prefixes.set(mountMatch[3], mountMatch[2]);
+    }
+  }
+
+  return prefixes;
 }
 
 function extractWorkflowRunCommands(text: string): Array<{ command: string; lineNumber: number }> {

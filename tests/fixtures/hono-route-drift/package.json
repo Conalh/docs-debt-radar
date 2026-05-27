@@ -1,0 +1,10 @@
+{
+  "name": "hono-route-drift",
+  "private": true,
+  "scripts": {
+    "test": "echo test"
+  },
+  "dependencies": {
+    "hono": "^4.0.0"
+  }
+}

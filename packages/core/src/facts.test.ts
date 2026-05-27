@@ -125,13 +125,14 @@ describe("scanRepositoryFacts", () => {
     );
   });
 
-  it("extracts Next.js, FastAPI, Flask, Django, Express, and NestJS route facts", async () => {
+  it("extracts Next.js, FastAPI, Flask, Django, Express, NestJS, and Hono route facts", async () => {
     const nextResult = await scanRepositoryFacts({ root: fixturePath("nextjs-route-drift") });
     const fastApiResult = await scanRepositoryFacts({ root: fixturePath("python-fastapi-drift") });
     const flaskResult = await scanRepositoryFacts({ root: fixturePath("python-flask-drift") });
     const djangoResult = await scanRepositoryFacts({ root: fixturePath("python-django-drift") });
     const expressResult = await scanRepositoryFacts({ root: fixturePath("express-route-drift") });
     const nestResult = await scanRepositoryFacts({ root: fixturePath("nestjs-route-drift") });
+    const honoResult = await scanRepositoryFacts({ root: fixturePath("hono-route-drift") });
 
     expect(
       nextResult.facts.map((fact) => ({
@@ -305,6 +306,33 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "src/app.controller.ts",
           lineNumber: 13,
           metadataJson: { framework: "nestjs", method: "post" }
+        }
+      ])
+    );
+
+    expect(
+      honoResult.facts.map((fact) => ({
+        kind: fact.kind,
+        value: fact.value,
+        sourcePath: fact.sourcePath,
+        lineNumber: fact.lineNumber,
+        metadataJson: fact.metadataJson
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          kind: "route_exists",
+          value: "/health",
+          sourcePath: "src/app.ts",
+          lineNumber: 6,
+          metadataJson: { framework: "hono", method: "get" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users",
+          sourcePath: "src/app.ts",
+          lineNumber: 10,
+          metadataJson: { framework: "hono", method: "post" }
         }
       ])
     );

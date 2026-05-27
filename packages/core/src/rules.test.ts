@@ -41,7 +41,8 @@ const fixtureIds = [
   "python-flask-drift",
   "python-django-drift",
   "express-route-drift",
-  "nestjs-route-drift"
+  "nestjs-route-drift",
+  "hono-route-drift"
 ];
 
 const tempDirs: string[] = [];

@@ -84,6 +84,14 @@
       "expectedReport": "expected-report.json",
       "coversFailingRules": ["stale-route-mention"],
       "coversPassingRules": ["stale-route-mention"]
+    },
+    {
+      "id": "hono-route-drift",
+      "description": "A minimal Hono app with documented existing and stale routes.",
+      "projectTypes": ["hono"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
     }
   ]
 }

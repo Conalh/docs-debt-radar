@@ -30,6 +30,7 @@ describe("public documentation", () => {
       "docs/examples/django.md",
       "docs/examples/express.md",
       "docs/examples/nestjs.md",
+      "docs/examples/hono.md",
       "docs/examples/github-actions.md"
     ];
 

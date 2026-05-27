@@ -1,16 +1,23 @@
-# Docs Debt Radar
+# Docs Debt Radar [![ci](https://github.com/Conalh/docs-debt-radar/actions/workflows/ci.yml/badge.svg)](https://github.com/Conalh/docs-debt-radar/actions/workflows/ci.yml) [![node](https://img.shields.io/badge/node-%3E%3D22-blue)](package.json) [![typescript](https://img.shields.io/badge/TypeScript-5.8-blue)](tsconfig.base.json) [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**A documentation truth layer for fast-moving repos.** README claims, setup docs, workflow snippets, route mentions, env vars, and screenshot links are turned into evidence-backed findings when they drift away from the code.
+**A documentation truth layer for fast-moving repos.** README claims, setup docs, workflow snippets, route mentions, env vars, screenshots, and internal links are turned into evidence-backed findings when they drift away from the code.
 
-```text
-README / docs ──► claims ─┐
-package.json  ──► facts   ├──► rules ──► CLI report / GitHub Action / viewer
-routes, envs  ──► facts   ┘
+```mermaid
+flowchart LR
+  Docs["README + docs"] --> Claims["Claims"]
+  Code["package.json, routes, env, workflows"] --> Facts["Repository facts"]
+  Claims --> Rules["Rules"]
+  Facts --> Rules
+  Rules --> CLI["CLI report"]
+  Rules --> Action["GitHub Action"]
+  Rules --> Viewer["Static viewer"]
 ```
 
-Ships as a local TypeScript CLI, a composite GitHub Action, and an optional static report viewer. No network access is needed for local scans, and the default Action posture is report-only.
+Ships as a local TypeScript CLI, a composite GitHub Action, and an optional static report viewer. Local scans do not need network access. The Action defaults to report-only mode, so teams opt in before docs drift can fail CI.
 
-## Why This Exists
+**See also:** [rules](docs/product/rules.md) for every supported finding, [configuration](docs/product/configuration.md) for CLI options and suppressions, [release readiness](docs/product/release-readiness.md) for package checks, and [examples](#examples) for supported project shapes.
+
+## Why this exists
 
 Docs rot because they make claims:
 
@@ -26,6 +33,8 @@ When those claims go stale, users lose time and coding agents follow bad instruc
 The bias is conservative: fewer findings with stronger evidence beats noisy linting.
 
 ## Quick Start
+
+From this repo:
 
 ```bash
 pnpm install
@@ -94,7 +103,32 @@ Reproduce it:
 docs-debt-radar scan tests/fixtures/basic-node-drift --format markdown
 ```
 
-## The Evidence Model
+## What it checks
+
+Current rules:
+
+```text
+missing-referenced-file              docs link to a path that is absent
+missing-package-script               docs mention a package script that is absent
+env-var-not-documented               source reads an env var docs do not mention
+documented-env-var-not-used          docs mention an env var source does not read
+stale-route-mention                  docs mention a route not found by supported extractors
+broken-markdown-anchor               docs link to a missing heading anchor
+missing-screenshot                   docs reference an image path that is absent
+external-link-unreachable            opted-in external link check returns a failure
+workflow-references-missing-script   workflow runs a package script or file that is absent
+```
+
+Route extraction currently covers Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, Rails, Laravel, and Symfony conventions.
+
+Inspect the live rule metadata:
+
+```bash
+docs-debt-radar list-rules
+docs-debt-radar explain missing-package-script
+```
+
+## The evidence model
 
 Four records drive the scanner:
 
@@ -111,31 +145,6 @@ Modeling choices worth flagging:
 - Facts are deliberately boring: file existence, package scripts, env declarations, routes, workflows, anchors.
 - Findings carry false-positive notes because suppression should be a conscious decision, not a hidden ignore.
 - Suppressed findings are counted and listed separately in JSON so teams can see what they are choosing not to fix.
-
-## The Rule Layer
-
-Rules-based, not semantic guesswork. Current rules:
-
-```text
-missing-referenced-file              docs link to a path that is absent
-missing-package-script               docs mention a package script that is absent
-env-var-not-documented               source reads an env var docs do not mention
-documented-env-var-not-used          docs mention an env var source does not read
-stale-route-mention                  docs mention a route not found by supported extractors
-broken-markdown-anchor               docs link to a missing heading anchor
-missing-screenshot                   docs reference an image path that is absent
-external-link-unreachable            opted-in external link check returns a failure
-workflow-references-missing-script   workflow runs a package script or file that is absent
-```
-
-Inspect the live rule metadata:
-
-```bash
-docs-debt-radar list-rules
-docs-debt-radar explain missing-package-script
-```
-
-Rule docs live in [docs/product/rules.md](docs/product/rules.md).
 
 ## CLI
 
@@ -159,14 +168,35 @@ Exit codes:
 - `1`: scan completed and at least one visible finding met the fail threshold.
 - `2`: invalid command, option, output format, changed-file lookup, or runtime/config error.
 
-Use `--format sarif` when you want a code-scanning compatible report with finding locations, rule metadata, and suggested edits.
-Use `--format patch` when you want conservative unified-diff suggestions for patchable single-line documentation findings. These patches are suggestions only; the scanner does not modify files.
-Use `--format agent` when you want a compact Markdown handoff that tells coding agents which stale instructions to avoid before following repo docs.
-Use `--changed-only` to scan only Markdown docs reported by `git status`, while still comparing them against facts from the whole repository.
-Use `--changed-since <ref>` to scan Markdown docs changed since a base ref, which is useful for pull requests and monorepos.
-Use `--check-external-links` when you explicitly want network checks for external Markdown links.
+Use `--format sarif` for code-scanning compatible output, `--format patch` for conservative unified-diff suggestions, and `--format agent` for a compact handoff that tells coding agents which stale instructions to avoid before following repo docs.
+
+Use `--changed-only` to scan only Markdown docs reported by `git status`, while still comparing them against facts from the whole repository. Use `--changed-since <ref>` for pull request and monorepo workflows. Use `--check-external-links` only when you explicitly want network checks for external Markdown links.
 
 Archived docs under `docs/archive/**`, `docs/archives/**`, and changelog files still report drift, but as `info` findings so historical notes do not look like active setup breakage.
+
+## GitHub Action
+
+The Action wraps the CLI, writes a report artifact, and can optionally post a pull request summary comment.
+
+```yaml
+name: Docs Debt Radar
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  docs-debt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conalh/docs-debt-radar@v1
+        with:
+          fail-on: none
+          report-format: markdown
+```
+
+See [GitHub Action docs](docs/product/github-action.md) for changed-file scans, external link checks, PR comments, and artifact settings.
 
 ## Suppressions
 
@@ -178,7 +208,7 @@ Known exceptions require reasons:
 See [generated docs](docs/generated.md).
 ```
 
-Config suppressions live in `.docs-debt-radar.json`; see [Configuration](docs/product/configuration.md) and [Suppressions](docs/product/suppressions.md).
+Config suppressions live in `.docs-debt-radar.json`; see [configuration](docs/product/configuration.md) and [suppressions](docs/product/suppressions.md).
 
 ## Report Viewer
 
@@ -186,7 +216,19 @@ Config suppressions live in `.docs-debt-radar.json`; see [Configuration](docs/pr
 pnpm --filter @docs-debt-radar/web build
 ```
 
-Open `apps/web/index.html` and load a JSON report. The viewer is optional; the CLI and Action remain complete without it.
+Open `apps/web/index.html` and load a JSON report. The viewer gives summary counts, severity filters, finding details, and Markdown export without making the CLI or Action depend on a hosted service.
+
+## Architecture
+
+```text
+apps/action    GitHub Action wrapper and report artifact integration
+apps/cli       Node CLI, output formats, exit codes, and command parsing
+apps/web       Optional static JSON report viewer
+packages/core  Scanner models, Markdown claims, repository facts, rules, reports
+tests/fixtures Drift fixtures with expected reports for supported project shapes
+```
+
+The core package owns the evidence model and scanner behavior. The CLI, Action, and viewer consume the same report shape, so a finding means the same thing locally, in CI, and in the optional UI.
 
 ## Examples
 
@@ -205,7 +247,7 @@ Open `apps/web/index.html` and load a JSON report. The viewer is optional; the C
 - [GitHub Actions workflow](docs/examples/github-actions.md)
 - [Release readiness](docs/product/release-readiness.md)
 
-## Development
+## Tests
 
 ```bash
 pnpm install
@@ -221,14 +263,7 @@ pnpm smoke:packed
 pnpm release:check
 ```
 
-Project layout:
-
-```text
-apps/action    GitHub Action wrapper
-apps/cli       Node CLI
-apps/web       Optional static report viewer
-packages/core  Scanner models, extractors, rules, and reports
-```
+`pnpm release:check` is the full gate: metadata, formatting, lint, typecheck, tests, build, dogfood scan, Action smoke, package surface audit, and packed CLI smoke.
 
 ## Status
 

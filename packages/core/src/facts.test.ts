@@ -125,10 +125,11 @@ describe("scanRepositoryFacts", () => {
     );
   });
 
-  it("extracts Next.js, FastAPI, Flask, and Express route facts", async () => {
+  it("extracts Next.js, FastAPI, Flask, Django, and Express route facts", async () => {
     const nextResult = await scanRepositoryFacts({ root: fixturePath("nextjs-route-drift") });
     const fastApiResult = await scanRepositoryFacts({ root: fixturePath("python-fastapi-drift") });
     const flaskResult = await scanRepositoryFacts({ root: fixturePath("python-flask-drift") });
+    const djangoResult = await scanRepositoryFacts({ root: fixturePath("python-django-drift") });
     const expressResult = await scanRepositoryFacts({ root: fixturePath("express-route-drift") });
 
     expect(
@@ -201,6 +202,33 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "app.py",
           lineNumber: 10,
           metadataJson: { framework: "flask", method: "route" }
+        }
+      ])
+    );
+
+    expect(
+      djangoResult.facts.map((fact) => ({
+        kind: fact.kind,
+        value: fact.value,
+        sourcePath: fact.sourcePath,
+        lineNumber: fact.lineNumber,
+        metadataJson: fact.metadataJson
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          kind: "route_exists",
+          value: "/health/",
+          sourcePath: "config/urls.py",
+          lineNumber: 6,
+          metadataJson: { framework: "django", routeType: "path" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users/",
+          sourcePath: "config/urls.py",
+          lineNumber: 7,
+          metadataJson: { framework: "django", routeType: "path" }
         }
       ])
     );

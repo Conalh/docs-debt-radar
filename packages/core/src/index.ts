@@ -1066,6 +1066,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const routeList = formatList([...routeValues].sort(compareRouteDisplayValues));
   const isFastApi = routeFacts.some((fact) => fact.metadataJson.framework === "fastapi");
   const isFlask = routeFacts.some((fact) => fact.metadataJson.framework === "flask");
+  const isDjango = routeFacts.some((fact) => fact.metadataJson.framework === "django");
   const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
 
   return claims
@@ -1076,12 +1077,12 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
       return createFinding({
         ruleId: "stale-route-mention",
         severity: "medium",
-        title: routeMissingTitle({ isFastApi, isFlask, isExpress }),
+        title: routeMissingTitle({ isFastApi, isFlask, isDjango, isExpress }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isFlask || isExpress
+          isFastApi || isFlask || isDjango || isExpress
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1093,6 +1094,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           route: claim.normalizedValue,
           isFastApi,
           isFlask,
+          isDjango,
           isExpress
         }),
         falsePositiveNote:
@@ -1104,6 +1106,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
 function routeMissingTitle(input: {
   isFastApi: boolean;
   isFlask: boolean;
+  isDjango: boolean;
   isExpress: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1112,6 +1115,10 @@ function routeMissingTitle(input: {
 
   if (input.isFlask) {
     return "Documented Flask route was not found";
+  }
+
+  if (input.isDjango) {
+    return "Documented Django route was not found";
   }
 
   if (input.isExpress) {
@@ -1125,6 +1132,7 @@ function routeMissingSuggestion(input: {
   route: string;
   isFastApi: boolean;
   isFlask: boolean;
+  isDjango: boolean;
   isExpress: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1133,6 +1141,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isFlask) {
     return "Update the route mention or add the missing Flask route.";
+  }
+
+  if (input.isDjango) {
+    return "Update the route mention or add the missing Django URL pattern.";
   }
 
   if (input.isExpress) {
@@ -1784,6 +1796,20 @@ async function extractRouteFacts(
           );
         }
       }
+
+      if (looksLikeDjangoUrlConf(text)) {
+        for (const route of extractDjangoRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "django", routeType: "path" }
+            })
+          );
+        }
+      }
       continue;
     }
 
@@ -1959,6 +1985,29 @@ function extractFlaskRoutes(
   }
 
   return routes;
+}
+
+function looksLikeDjangoUrlConf(text: string): boolean {
+  return /\bfrom\s+django\.urls\s+import\b/.test(text) && /\burlpatterns\s*=/.test(text);
+}
+
+function extractDjangoRoutes(text: string): Array<{ path: string; lineNumber: number }> {
+  const routes: Array<{ path: string; lineNumber: number }> = [];
+  const routePattern = /\bpath\(\s*["']([^"']*)["']/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    routePattern.lastIndex = 0;
+    const match = routePattern.exec(line);
+    if (match?.[1] !== undefined) {
+      routes.push({ path: normalizeDjangoRoute(match[1]), lineNumber: lineIndex + 1 });
+    }
+  }
+
+  return routes;
+}
+
+function normalizeDjangoRoute(route: string): string {
+  return `/${route}`.replace(/\/{2,}/g, "/") || "/";
 }
 
 function looksLikeExpressSource(text: string): boolean {

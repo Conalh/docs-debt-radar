@@ -62,6 +62,14 @@
       "coversPassingRules": ["stale-route-mention"]
     },
     {
+      "id": "python-django-drift",
+      "description": "A minimal Django URL config with documented existing and stale routes.",
+      "projectTypes": ["django"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
+    },
+    {
       "id": "express-route-drift",
       "description": "A minimal Express app with documented existing and stale routes.",
       "projectTypes": ["express"],

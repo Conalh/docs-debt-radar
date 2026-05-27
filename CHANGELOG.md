@@ -35,3 +35,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added a local GitHub Action smoke test for temporary demo checkout validation.
 - Added Flask route extraction for literal app and blueprint decorators.
 - Added a dogfood scan script and repo suppression config for intentional fixture/demo drift.
+- Added Django route extraction for literal `path()` URL patterns.

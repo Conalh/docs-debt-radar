@@ -194,6 +194,7 @@ Open `apps/web/index.html` and load a JSON report. The viewer is optional; the C
 - [Next.js](docs/examples/nextjs.md)
 - [FastAPI](docs/examples/fastapi.md)
 - [Flask](docs/examples/flask.md)
+- [Django](docs/examples/django.md)
 - [Express](docs/examples/express.md)
 - [GitHub Actions workflow](docs/examples/github-actions.md)
 - [Release readiness](docs/product/release-readiness.md)

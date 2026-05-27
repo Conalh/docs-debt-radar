@@ -199,6 +199,7 @@ Open `apps/web/index.html` and load a JSON report. The viewer is optional; the C
 - [NestJS](docs/examples/nestjs.md)
 - [Hono](docs/examples/hono.md)
 - [Koa](docs/examples/koa.md)
+- [Rails](docs/examples/rails.md)
 - [GitHub Actions workflow](docs/examples/github-actions.md)
 - [Release readiness](docs/product/release-readiness.md)
 

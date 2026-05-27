@@ -44,3 +44,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added NestJS controller route extraction for literal decorators.
 - Added Hono route extraction for literal app and mounted app calls.
 - Added Koa Router route extraction for literal routes and prefixes.
+- Added Rails route extraction for literal route declarations and scope prefixes.

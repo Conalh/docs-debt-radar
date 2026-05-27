@@ -330,7 +330,7 @@ interface MarkdownNode {
 const severityOrder: Severity[] = ["high", "medium", "low", "info"];
 const shellLanguages = new Set(["bash", "shell", "sh", "zsh", "console"]);
 const ignoredDirectories = new Set([".git", "node_modules", "dist", "coverage"]);
-const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py"]);
+const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".rb"]);
 
 export const V1_RULES: readonly RuleMetadata[] = [
   {
@@ -1072,6 +1072,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isNestJs = routeFacts.some((fact) => fact.metadataJson.framework === "nestjs");
   const isHono = routeFacts.some((fact) => fact.metadataJson.framework === "hono");
   const isKoa = routeFacts.some((fact) => fact.metadataJson.framework === "koa");
+  const isRails = routeFacts.some((fact) => fact.metadataJson.framework === "rails");
   const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
@@ -1090,13 +1091,14 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isNestJs,
           isHono,
           isKoa,
+          isRails,
           isNextJs
         }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isFlask || isDjango || isExpress || isNestJs || isHono || isKoa
+          isFastApi || isFlask || isDjango || isExpress || isNestJs || isHono || isKoa || isRails
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1113,6 +1115,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isNestJs,
           isHono,
           isKoa,
+          isRails,
           isNextJs
         }),
         falsePositiveNote:
@@ -1129,6 +1132,7 @@ function routeMissingTitle(input: {
   isNestJs: boolean;
   isHono: boolean;
   isKoa: boolean;
+  isRails: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1159,6 +1163,10 @@ function routeMissingTitle(input: {
     return "Documented Koa route was not found";
   }
 
+  if (input.isRails) {
+    return "Documented Rails route was not found";
+  }
+
   if (input.isNextJs) {
     return "Documented Next.js route was not found";
   }
@@ -1175,6 +1183,7 @@ function routeMissingSuggestion(input: {
   isNestJs: boolean;
   isHono: boolean;
   isKoa: boolean;
+  isRails: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1203,6 +1212,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isKoa) {
     return "Update the route mention or add the missing Koa router route.";
+  }
+
+  if (input.isRails) {
+    return "Update the route mention or add the missing Rails route.";
   }
 
   if (input.isNextJs) {
@@ -1917,6 +1930,26 @@ async function extractRouteFacts(
       continue;
     }
 
+    if (extname(file.path).toLowerCase() === ".rb") {
+      const text = await readTextForFact(root, file.path, warnings);
+      if (text === undefined || !looksLikeRailsRoutes(text)) {
+        continue;
+      }
+
+      for (const route of extractRailsRoutes(text)) {
+        facts.push(
+          createCodeFact({
+            kind: "route_exists",
+            value: route.path,
+            sourcePath: file.path,
+            lineNumber: route.lineNumber,
+            metadata: { framework: "rails", method: route.method }
+          })
+        );
+      }
+      continue;
+    }
+
     if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(extname(file.path).toLowerCase())) {
       const text = await readTextForFact(root, file.path, warnings);
       if (text === undefined) {
@@ -2383,6 +2416,43 @@ function extractKoaRouterPrefixes(text: string): Map<string, string> {
   }
 
   return prefixes;
+}
+
+function looksLikeRailsRoutes(text: string): boolean {
+  return /\bRails\.application\.routes\.draw\s+do\b/.test(text);
+}
+
+function extractRailsRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const scopePrefixes: string[] = [];
+  const scopePattern = /^\s*scope\s+["'`]([^"'`]+)["'`]\s+do\b/;
+  const routePattern = /^\s*(get|post|put|patch|delete|options|head)\s+["'`]([^"'`]+)["'`]/;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    const scopeMatch = scopePattern.exec(line);
+    if (scopeMatch?.[1]) {
+      scopePrefixes.push(scopeMatch[1]);
+      continue;
+    }
+
+    if (/^\s*end\b/.test(line) && scopePrefixes.length > 0) {
+      scopePrefixes.pop();
+      continue;
+    }
+
+    const routeMatch = routePattern.exec(line);
+    if (routeMatch?.[1] && routeMatch[2]) {
+      routes.push({
+        method: routeMatch[1],
+        path: combineRouteParts(scopePrefixes.join("/"), routeMatch[2]),
+        lineNumber: lineIndex + 1
+      });
+    }
+  }
+
+  return routes;
 }
 
 function extractWorkflowRunCommands(text: string): Array<{ command: string; lineNumber: number }> {

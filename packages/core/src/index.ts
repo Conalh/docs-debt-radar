@@ -1071,6 +1071,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
   const isNestJs = routeFacts.some((fact) => fact.metadataJson.framework === "nestjs");
   const isHono = routeFacts.some((fact) => fact.metadataJson.framework === "hono");
+  const isKoa = routeFacts.some((fact) => fact.metadataJson.framework === "koa");
   const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
@@ -1088,13 +1089,14 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isExpress,
           isNestJs,
           isHono,
+          isKoa,
           isNextJs
         }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isFlask || isDjango || isExpress || isNestJs || isHono
+          isFastApi || isFlask || isDjango || isExpress || isNestJs || isHono || isKoa
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1110,6 +1112,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isExpress,
           isNestJs,
           isHono,
+          isKoa,
           isNextJs
         }),
         falsePositiveNote:
@@ -1125,6 +1128,7 @@ function routeMissingTitle(input: {
   isExpress: boolean;
   isNestJs: boolean;
   isHono: boolean;
+  isKoa: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1151,6 +1155,10 @@ function routeMissingTitle(input: {
     return "Documented Hono route was not found";
   }
 
+  if (input.isKoa) {
+    return "Documented Koa route was not found";
+  }
+
   if (input.isNextJs) {
     return "Documented Next.js route was not found";
   }
@@ -1166,6 +1174,7 @@ function routeMissingSuggestion(input: {
   isExpress: boolean;
   isNestJs: boolean;
   isHono: boolean;
+  isKoa: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1190,6 +1199,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isHono) {
     return "Update the route mention or add the missing Hono route.";
+  }
+
+  if (input.isKoa) {
+    return "Update the route mention or add the missing Koa router route.";
   }
 
   if (input.isNextJs) {
@@ -1951,6 +1964,20 @@ async function extractRouteFacts(
           );
         }
       }
+
+      if (looksLikeKoaSource(text)) {
+        for (const route of extractKoaRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "koa", method: route.method }
+            })
+          );
+        }
+      }
     }
   }
 
@@ -2306,6 +2333,52 @@ function extractHonoAppPrefixes(text: string): Map<string, string> {
       appNames.has(mountMatch[3])
     ) {
       prefixes.set(mountMatch[3], mountMatch[2]);
+    }
+  }
+
+  return prefixes;
+}
+
+function looksLikeKoaSource(text: string): boolean {
+  return (
+    /\bfrom\s+["']@koa\/router["']|\brequire\(\s*["']@koa\/router["']\s*\)/.test(text) &&
+    /\bnew\s+Router\(/.test(text)
+  );
+}
+
+function extractKoaRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const routerPrefixes = extractKoaRouterPrefixes(text);
+  const routePattern =
+    /\b(\w+)\.(get|post|put|patch|delete|del|options|head|all)\(\s*["'`]([^"'`]+)["'`]/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    routePattern.lastIndex = 0;
+    const match = routePattern.exec(line);
+    if (match?.[1] && match[2] && match[3] && routerPrefixes.has(match[1])) {
+      routes.push({
+        method: match[2] === "del" ? "delete" : match[2],
+        path: combineRouteParts(routerPrefixes.get(match[1]) ?? "", match[3]),
+        lineNumber: lineIndex + 1
+      });
+    }
+  }
+
+  return routes;
+}
+
+function extractKoaRouterPrefixes(text: string): Map<string, string> {
+  const prefixes = new Map<string, string>();
+  const routerPattern =
+    /\b(?:const|let|var)\s+(\w+)\s*=\s*new\s+Router\(\s*(?:\{\s*prefix\s*:\s*["'`]([^"'`]*)["'`][^}]*\})?/g;
+
+  for (const line of text.split(/\r?\n/)) {
+    routerPattern.lastIndex = 0;
+    const match = routerPattern.exec(line);
+    if (match?.[1]) {
+      prefixes.set(match[1], match[2] ?? "");
     }
   }
 

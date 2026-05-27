@@ -1,0 +1,11 @@
+{
+  "name": "koa-route-drift",
+  "private": true,
+  "scripts": {
+    "test": "echo test"
+  },
+  "dependencies": {
+    "@koa/router": "^12.0.0",
+    "koa": "^2.0.0"
+  }
+}

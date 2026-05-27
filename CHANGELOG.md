@@ -43,3 +43,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added Express mounted router prefix extraction for literal `app.use()` mounts.
 - Added NestJS controller route extraction for literal decorators.
 - Added Hono route extraction for literal app and mounted app calls.
+- Added Koa Router route extraction for literal routes and prefixes.

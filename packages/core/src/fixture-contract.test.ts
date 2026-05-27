@@ -64,6 +64,7 @@ const requiredProjectTypes = [
   "express",
   "nestjs",
   "hono",
+  "koa",
   "github-actions",
   "docs-assets-env"
 ];
@@ -91,6 +92,7 @@ describe("fixture contract", () => {
       "express-route-drift",
       "github-actions-drift",
       "hono-route-drift",
+      "koa-route-drift",
       "nestjs-route-drift",
       "nextjs-route-drift",
       "python-django-drift",

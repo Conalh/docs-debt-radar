@@ -92,6 +92,14 @@
       "expectedReport": "expected-report.json",
       "coversFailingRules": ["stale-route-mention"],
       "coversPassingRules": ["stale-route-mention"]
+    },
+    {
+      "id": "koa-route-drift",
+      "description": "A minimal Koa app with documented existing and stale routes.",
+      "projectTypes": ["koa"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
     }
   ]
 }

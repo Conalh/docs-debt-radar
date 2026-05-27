@@ -164,6 +164,8 @@ Use `--changed-only` to scan only Markdown docs reported by `git status`, while 
 Use `--changed-since <ref>` to scan Markdown docs changed since a base ref, which is useful for pull requests and monorepos.
 Use `--check-external-links` when you explicitly want network checks for external Markdown links.
 
+Archived docs under `docs/archive/**`, `docs/archives/**`, and changelog files still report drift, but as `info` findings so historical notes do not look like active setup breakage.
+
 ## Suppressions
 
 Known exceptions require reasons:

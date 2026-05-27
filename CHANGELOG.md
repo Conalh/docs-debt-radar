@@ -29,3 +29,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added structured suggested fixes and CLI `--format patch` output for patchable documentation findings.
 - Added opt-in GitHub Action pull request summary comments.
 - Added `--changed-since` base-ref scanning for pull request and monorepo workflows.
+- Downgraded archived and changelog documentation drift to informational findings.

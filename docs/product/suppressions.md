@@ -64,8 +64,9 @@ Suppressed findings are removed from `findingsJson`, so `--fail-on` only evaluat
 Use suppressions for legitimate exceptions:
 
 - generated docs, screenshots, or files that are not present during local scans
-- archived docs that intentionally reference old paths
 - dynamic routes or env vars outside the scanner's supported conventions
 - temporary migration periods where fixing docs immediately would be misleading
+
+Archived docs under `docs/archive/**`, `docs/archives/**`, and changelog files are already downgraded to `info`. Suppress them only when even informational output is too noisy.
 
 Do not suppress findings that point to normal stale setup instructions, missing scripts, broken links in current docs, or undocumented required env vars. Fix those docs instead.

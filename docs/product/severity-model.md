@@ -31,7 +31,6 @@ Use `low` when the claim is probably drift but has plausible benign explanations
 Examples:
 
 - Docs mention an env var that source no longer references.
-- Historical docs mention a file path that may be archive-only.
 - A deeper docs page references an optional image that is missing.
 
 ## Info
@@ -40,6 +39,8 @@ Use `info` for observations that help maintainers improve docs but should not be
 
 Examples:
 
+- Archived docs in `docs/archive/**` or `docs/archives/**` preserve a stale file, script, route, image, or anchor claim.
+- Changelog docs preserve a historical claim that no longer matches the current repository.
 - A rule skipped a framework it does not support yet.
 - A file was skipped because it exceeded the configured size cap.
 - A suppression was applied with a reason.

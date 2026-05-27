@@ -173,6 +173,34 @@ describe("scanDocsDebt", () => {
       })
     ]);
   });
+
+  it("keeps archived documentation drift informational", async () => {
+    const fixtureRoot = join(process.cwd(), "tests/fixtures/archive-docs-drift");
+    const report = await scanDocsDebt({
+      root: fixtureRoot,
+      scannerVersion: "0.0.0-test",
+      scannedAt: "2026-05-27T00:00:00.000Z"
+    });
+
+    expect(report.findingsJson).toEqual([
+      expect.objectContaining({
+        ruleId: "missing-package-script",
+        severity: "info",
+        documentPath: "docs/archive/v0.md"
+      }),
+      expect.objectContaining({
+        ruleId: "missing-referenced-file",
+        severity: "info",
+        documentPath: "docs/archive/v0.md"
+      })
+    ]);
+    expect(report.summaryJson.bySeverity).toEqual({
+      high: 0,
+      medium: 0,
+      low: 0,
+      info: 2
+    });
+  });
 });
 
 function compareExpectedFindings(

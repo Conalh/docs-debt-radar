@@ -42,6 +42,8 @@ Flags documented npm, pnpm, or yarn scripts that are missing from package.json.
 - `low`: cleanup signal or possible stale optional detail.
 - `info`: context-only signal for future rules.
 
+Findings from `docs/archive/**`, `docs/archives/**`, and changelog files are downgraded to `info` because those docs may intentionally preserve historical claims.
+
 ## False Positives
 
 Prefer fixing current docs over suppressing findings. Use suppressions only for generated files, archived docs, dynamic runtime behavior, or scanner limitations that are understood and documented with a reason.

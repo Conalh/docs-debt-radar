@@ -713,7 +713,7 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
   const claimsResult = await scanMarkdownClaims({ root: input.root, docsPaths });
   const factsResult = await scanRepositoryFacts({ root: input.root });
   const warnings = [...claimsResult.warnings, ...factsResult.warnings];
-  const findings = [
+  const findings = normalizeHistoricalFindings([
     ...runRules(claimsResult.claims, factsResult.facts),
     ...(input.checkExternalLinks
       ? await findUnreachableExternalLinks(
@@ -721,7 +721,7 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
           input.externalLinkChecker ?? checkExternalLink
         )
       : [])
-  ];
+  ]);
   const suppressionDirectives = await readSuppressionDirectives(
     input.root,
     claimsResult.documents,
@@ -827,6 +827,30 @@ function runRules(claims: readonly Claim[], facts: readonly CodeFact[]): Finding
     ...findMissingScreenshots(claims, facts),
     ...findWorkflowMissingScripts(facts)
   ];
+}
+
+function normalizeHistoricalFindings(findings: readonly Finding[]): Finding[] {
+  return findings.map((finding) => {
+    if (!isHistoricalDocumentPath(finding.documentPath)) {
+      return finding;
+    }
+
+    return {
+      ...finding,
+      severity: "info",
+      falsePositiveNote: `${finding.falsePositiveNote} Archived or historical docs may intentionally preserve old claims.`
+    };
+  });
+}
+
+function isHistoricalDocumentPath(path: string): boolean {
+  const normalizedPath = normalizePath(path).toLowerCase();
+  return (
+    normalizedPath === "changelog.md" ||
+    normalizedPath.endsWith("/changelog.md") ||
+    normalizedPath.startsWith("docs/archive/") ||
+    normalizedPath.startsWith("docs/archives/")
+  );
 }
 
 async function findUnreachableExternalLinks(

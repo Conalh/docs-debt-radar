@@ -53,10 +53,6 @@ export function normalizeInputs(env: Record<string, string | undefined>): Action
 }
 
 export function buildCliArgs(input: ActionInputs): string[] | Error {
-  if (input.changedOnly) {
-    return new Error("changed-only is not supported by the CLI yet.");
-  }
-
   return [
     "scan",
     input.scanPath,
@@ -64,6 +60,7 @@ export function buildCliArgs(input: ActionInputs): string[] | Error {
     "json",
     "--fail-on",
     input.failOn,
+    ...(input.changedOnly ? ["--changed-only"] : []),
     ...(input.docsPaths.length > 0 ? ["--docs", ...input.docsPaths] : [])
   ];
 }

@@ -75,6 +75,30 @@ describe("scanDocsDebt", () => {
       findings: [...expected.findings].sort(compareExpectedFindings)
     });
   });
+
+  it("scans only changed Markdown docs while keeping full repository facts", async () => {
+    const fixtureRoot = join(process.cwd(), "tests/fixtures/basic-node-drift");
+    const report = await scanDocsDebt({
+      root: fixtureRoot,
+      scannerVersion: "0.0.0-test",
+      scannedAt: "2026-05-27T00:00:00.000Z",
+      changedOnly: true,
+      changedPaths: ["README.md"]
+    });
+
+    expect(report.config.changedOnly).toBe(true);
+    expect(report.config.docsGlobs).toEqual(["README.md"]);
+    expect(report.documentsJson.map((document) => document.path)).toEqual(["README.md"]);
+    expect(report.summaryJson.factCount).toBeGreaterThan(0);
+    expect(report.findingsJson).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: "missing-package-script",
+          documentPath: "README.md"
+        })
+      ])
+    );
+  });
 });
 
 function compareExpectedFindings(

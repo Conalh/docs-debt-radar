@@ -36,15 +36,15 @@ Supported thresholds are `none`, `info`, `low`, `medium`, and `high`.
 
 ## Inputs
 
-| Input           | Default               | Purpose                                                 |
-| --------------- | --------------------- | ------------------------------------------------------- |
-| `path`          | `.`                   | Repository path to scan.                                |
-| `fail-on`       | `none`                | Severity threshold that fails the workflow.             |
-| `report-format` | `markdown`            | Report artifact format: `markdown` or `json`.           |
-| `docs`          | empty                 | Newline- or comma-separated Markdown docs paths.        |
-| `changed-only`  | `false`               | Reserved until changed-file scanning exists in the CLI. |
-| `report-path`   | `docs-debt-report.md` | Path for the generated report artifact.                 |
-| `artifact-name` | `docs-debt-report`    | Uploaded artifact name.                                 |
+| Input           | Default               | Purpose                                          |
+| --------------- | --------------------- | ------------------------------------------------ |
+| `path`          | `.`                   | Repository path to scan.                         |
+| `fail-on`       | `none`                | Severity threshold that fails the workflow.      |
+| `report-format` | `markdown`            | Report artifact format: `markdown` or `json`.    |
+| `docs`          | empty                 | Newline- or comma-separated Markdown docs paths. |
+| `changed-only`  | `false`               | Scan only changed Markdown docs from git status. |
+| `report-path`   | `docs-debt-report.md` | Path for the generated report artifact.          |
+| `artifact-name` | `docs-debt-report`    | Uploaded artifact name.                          |
 
 ## Outputs
 
@@ -71,6 +71,6 @@ Restrict scanning to selected docs:
 
 The Action always attempts to upload the generated report artifact, even when `fail-on` makes the scan step return exit code `1`. The job summary includes severity counts, warning counts, suppression counts, and the first ten visible findings.
 
-## Current Limitation
+## Changed-Only Scope
 
-`changed-only` is present as an Action input so workflow files can be shaped around the future option, but the current CLI does not implement changed-file scanning yet. Passing `changed-only: true` returns exit code `2`.
+Set `changed-only: true` to scan only Markdown docs reported by `git status` in the checked-out repository. The scanner still extracts repository facts from the full checkout, so changed docs can be checked against package scripts, routes, env vars, and workflow files elsewhere in a monorepo.

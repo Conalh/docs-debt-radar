@@ -11,6 +11,7 @@ docs-debt-radar scan . --format text
 docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
+docs-debt-radar scan . --changed-only
 ```
 
 Development inspection helpers:
@@ -55,3 +56,13 @@ docs-debt-radar scan . --fail-on high
 - `sarif`: SARIF 2.1.0 report for code-scanning tools.
 
 Markdown and SARIF output are only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.
+
+## Changed-Only Scans
+
+`--changed-only` reads Markdown paths from `git status` and scans only those changed docs. Repository fact extraction still runs across the full repository, so changed docs in a monorepo can still be compared against package scripts, routes, env vars, and workflow facts outside the changed file set.
+
+Combine it with `--docs` to limit the changed-doc scan to a known docs surface:
+
+```bash
+docs-debt-radar scan . --changed-only --docs README.md docs/
+```

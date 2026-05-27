@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 
 import {
@@ -31,6 +32,7 @@ export function createCliHelp(): string {
     "  --claims                            Print extracted Markdown claims",
     "  --facts                             Print extracted repository facts",
     "  --docs <path...>                    Restrict Markdown docs scanned for claims",
+    "  --changed-only                      Scan only Markdown docs changed in git status",
     "  --fail-on <none|info|low|medium|high> Exit with code 1 at or above this severity",
     "  --write-report <path>               Write the report to a file",
     "",
@@ -110,14 +112,26 @@ export async function runCli(args: string[]): Promise<CliResult> {
 
   const writeReportPath = readOption(args, "--write-report");
   const docsPaths = readOptionValues(args, "--docs");
+  const changedOnly = args.includes("--changed-only");
   const claimsOnly = args.includes("--claims");
   const factsOnly = args.includes("--facts");
+  const changedPaths = changedOnly ? readChangedGitPaths(targetPath) : [];
+  if (changedPaths instanceof Error) {
+    return {
+      exitCode: 2,
+      stdout: "",
+      stderr: `${changedPaths.message}\n`
+    };
+  }
 
   const result = claimsOnly
-    ? await scanMarkdownClaims({ root: targetPath, docsPaths })
+    ? await scanMarkdownClaims({
+        root: targetPath,
+        docsPaths: changedOnly ? filterChangedDocs(changedPaths, docsPaths) : docsPaths
+      })
     : factsOnly
       ? await scanRepositoryFacts({ root: targetPath })
-      : await scanDocsDebt({ root: targetPath, docsPaths });
+      : await scanDocsDebt({ root: targetPath, docsPaths, changedOnly, changedPaths });
 
   const rendered = renderResult(result, format);
   if (rendered instanceof Error) {
@@ -322,6 +336,46 @@ function sarifLevelForSeverity(severity: Severity): "error" | "warning" | "note"
   }
 
   return "note";
+}
+
+function readChangedGitPaths(root: string): string[] | Error {
+  const result = spawnSync("git", ["-C", root, "status", "--porcelain", "-z"], {
+    encoding: "utf8"
+  });
+
+  if (result.status !== 0) {
+    return new Error(
+      `Unable to read changed files from git status: ${result.stderr.trim() || "unknown error"}`
+    );
+  }
+
+  return result.stdout
+    .split("\0")
+    .map((entry) => entry.trimEnd())
+    .filter(Boolean)
+    .flatMap((entry) => {
+      const status = entry.slice(0, 2);
+      const path = entry.slice(3);
+
+      return status.includes("D") ? [] : [path];
+    });
+}
+
+function filterChangedDocs(
+  changedPaths: readonly string[],
+  docsPaths?: readonly string[]
+): string[] {
+  const changedDocs = changedPaths.filter((path) => path.toLowerCase().endsWith(".md"));
+
+  if (docsPaths === undefined) {
+    return changedDocs;
+  }
+
+  return changedDocs.filter((path) =>
+    docsPaths.some(
+      (docsPath) => path === docsPath || path.startsWith(`${docsPath.replace(/\/$/, "")}/`)
+    )
+  );
 }
 
 function readOption(args: string[], name: string): string | undefined {

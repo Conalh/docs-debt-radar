@@ -1,4 +1,5 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -142,6 +143,52 @@ describe("createCliHelp", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("restricts scans to Markdown docs changed in git status with --changed-only", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "docs-debt-radar-git-"));
+    tempDirs.push(tempDir);
+    await mkdir(join(tempDir, "docs"));
+    await writeFile(
+      join(tempDir, "package.json"),
+      `${JSON.stringify({ scripts: { test: "vitest" } }, null, 2)}\n`,
+      "utf8"
+    );
+    await writeFile(join(tempDir, "README.md"), "Run `npm run test`.\n", "utf8");
+    await writeFile(join(tempDir, "docs/setup.md"), "Run `npm run missing-docs`.\n", "utf8");
+    runGit(tempDir, ["init"]);
+    runGit(tempDir, ["add", "."]);
+    runGit(tempDir, [
+      "-c",
+      "user.name=Docs Debt Radar",
+      "-c",
+      "user.email=docs-debt-radar@example.test",
+      "commit",
+      "-m",
+      "initial fixture"
+    ]);
+    await writeFile(join(tempDir, "README.md"), "Run `npm run missing-readme`.\n", "utf8");
+
+    const result = await runCli(["scan", tempDir, "--format", "json", "--changed-only"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      config: {
+        changedOnly: true,
+        docsGlobs: ["README.md"]
+      },
+      summaryJson: {
+        totalFindings: 1,
+        scannedDocumentCount: 1
+      },
+      findingsJson: [
+        expect.objectContaining({
+          ruleId: "missing-package-script",
+          documentPath: "README.md"
+        })
+      ]
+    });
+    expect(result.stderr).toBe("");
+  });
+
   it("prints Markdown reports and writes reports to disk", async () => {
     const tempDir = await mkdtemp(join(tmpdir(), "docs-debt-radar-"));
     tempDirs.push(tempDir);
@@ -272,3 +319,10 @@ describe("createCliHelp", () => {
     expect(explainResult.stderr).toBe("");
   });
 });
+
+function runGit(cwd: string, args: string[]): void {
+  const result = spawnSync("git", args, { cwd, encoding: "utf8" });
+  if (result.status !== 0) {
+    throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
+  }
+}

@@ -131,6 +131,7 @@ docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
 docs-debt-radar scan . --docs README.md docs/setup.md
+docs-debt-radar scan . --changed-only
 docs-debt-radar scan . --fail-on high
 ```
 
@@ -138,9 +139,10 @@ Exit codes:
 
 - `0`: scan completed and no visible finding met the fail threshold.
 - `1`: scan completed and at least one visible finding met the fail threshold.
-- `2`: invalid command, option, unsupported changed-only mode, or runtime/config error.
+- `2`: invalid command, option, output format, changed-file lookup, or runtime/config error.
 
 Use `--format sarif` when you want a code-scanning compatible report with finding locations, rule metadata, and suggested edits.
+Use `--changed-only` to scan only Markdown docs reported by `git status`, while still comparing them against facts from the whole repository.
 
 ## Suppressions
 

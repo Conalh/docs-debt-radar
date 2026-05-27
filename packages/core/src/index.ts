@@ -257,6 +257,8 @@ export interface ScanDocsDebtInput {
   scannerVersion?: string;
   scannedAt?: string;
   docsPaths?: string[];
+  changedOnly?: boolean;
+  changedPaths?: string[];
 }
 
 export interface RuleMetadata {
@@ -665,7 +667,8 @@ export async function scanRepositoryFacts(
 }
 
 export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport> {
-  const claimsResult = await scanMarkdownClaims({ root: input.root, docsPaths: input.docsPaths });
+  const docsPaths = resolveScanDocsPaths(input);
+  const claimsResult = await scanMarkdownClaims({ root: input.root, docsPaths });
   const factsResult = await scanRepositoryFacts({ root: input.root });
   const warnings = [...claimsResult.warnings, ...factsResult.warnings];
   const findings = runRules(claimsResult.claims, factsResult.facts);
@@ -679,9 +682,9 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
   const scannerVersion = input.scannerVersion ?? "0.0.0";
   const config = createScanConfig({
     root: input.root,
-    docsGlobs: input.docsPaths ?? ["README.md", "docs/**/*.md"],
+    docsGlobs: docsPaths ?? ["README.md", "docs/**/*.md"],
     ignoreGlobs: ["node_modules/**", "dist/**", "coverage/**"],
-    changedOnly: false,
+    changedOnly: input.changedOnly ?? false,
     failOn: "none",
     outputFormat: "json",
     maxFileSizeBytes: 1000000
@@ -700,6 +703,38 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
     warnings,
     markdown: renderMarkdownFindings(suppressionResult.findings, suppressionResult.suppressions)
   });
+}
+
+function resolveScanDocsPaths(input: ScanDocsDebtInput): string[] | undefined {
+  if (!input.changedOnly) {
+    return input.docsPaths;
+  }
+
+  const changedMarkdownPaths = new Set(normalizeChangedMarkdownPaths(input.changedPaths ?? []));
+
+  if (input.docsPaths === undefined) {
+    return [...changedMarkdownPaths].sort();
+  }
+
+  const requestedPaths = new Set(input.docsPaths.map((path) => normalizePath(path)));
+
+  return [...changedMarkdownPaths]
+    .filter(
+      (path) =>
+        requestedPaths.has(path) ||
+        [...requestedPaths].some((prefix) => path.startsWith(`${prefix.replace(/\/$/, "")}/`))
+    )
+    .sort();
+}
+
+function normalizeChangedMarkdownPaths(paths: readonly string[]): string[] {
+  return [
+    ...new Set(
+      paths
+        .map((path) => normalizePath(path).replace(/^\.\//, ""))
+        .filter((path) => extname(path).toLowerCase() === ".md")
+    )
+  ].sort();
 }
 
 function compareFindings(left: Finding, right: Finding): number {

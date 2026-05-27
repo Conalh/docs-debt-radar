@@ -13,6 +13,7 @@ Docs Debt Radar is intentionally small in V1. Most behavior is controlled throug
 | `--write-report <path>` | Write the selected output format to disk.                        |
 | `--fail-on <threshold>` | Return exit code `1` when a visible finding meets the threshold. |
 | `--docs <path...>`      | Restrict Markdown docs scanned for claims.                       |
+| `--changed-only`        | Scan only changed Markdown docs reported by `git status`.        |
 | `--claims`              | Print extracted Markdown claims for debugging.                   |
 | `--facts`               | Print extracted repository facts for debugging.                  |
 
@@ -50,13 +51,13 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 | `fail-on`       | `none`                | Severity threshold that fails the workflow.      |
 | `report-format` | `markdown`            | Report artifact format.                          |
 | `docs`          | empty                 | Newline- or comma-separated Markdown docs paths. |
-| `changed-only`  | `false`               | Reserved until CLI changed-file scanning exists. |
+| `changed-only`  | `false`               | Scan only changed Markdown docs from git status. |
 | `report-path`   | `docs-debt-report.md` | Generated report path.                           |
 | `artifact-name` | `docs-debt-report`    | Uploaded artifact name.                          |
 
 ## Current Limits
 
-- `changed-only` is not implemented by the CLI yet.
+- `changed-only` requires the scanned path to be inside a Git repository.
 - External URL checking is out of V1 scope.
 - The scanner does not run documented commands.
 - Route extraction is limited to supported Next.js and FastAPI conventions.

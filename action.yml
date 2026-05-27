@@ -19,7 +19,7 @@ inputs:
     required: false
     default: ""
   changed-only:
-    description: Reserved for changed-file scanning once the CLI supports it.
+    description: Scan only changed Markdown docs reported by git status.
     required: false
     default: "false"
   report-path:

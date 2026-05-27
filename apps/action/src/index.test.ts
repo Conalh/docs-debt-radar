@@ -42,7 +42,7 @@ describe("GitHub Action wrapper", () => {
     ]);
   });
 
-  it("rejects changed-only until the CLI supports it", () => {
+  it("passes changed-only through to the CLI", () => {
     expect(
       buildCliArgs({
         scanPath: ".",
@@ -53,7 +53,7 @@ describe("GitHub Action wrapper", () => {
         reportPath: "docs-debt-report.md",
         artifactName: "docs-debt-report"
       })
-    ).toEqual(new Error("changed-only is not supported by the CLI yet."));
+    ).toEqual(["scan", ".", "--format", "json", "--fail-on", "none", "--changed-only"]);
   });
 
   it("renders a concise Markdown job summary", () => {

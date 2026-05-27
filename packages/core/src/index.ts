@@ -234,6 +234,12 @@ export interface ScanRepositoryFactsResult {
   warnings: ScannerWarning[];
 }
 
+export interface ScanDocsDebtInput {
+  root: string;
+  scannerVersion?: string;
+  scannedAt?: string;
+}
+
 interface MarkdownNode {
   type: string;
   value?: string;
@@ -551,6 +557,36 @@ export async function scanRepositoryFacts(
   };
 }
 
+export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport> {
+  const claimsResult = await scanMarkdownClaims({ root: input.root });
+  const factsResult = await scanRepositoryFacts({ root: input.root });
+  const findings = runRules(claimsResult.claims, factsResult.facts);
+  const scannedAt = input.scannedAt ?? new Date().toISOString();
+  const scannerVersion = input.scannerVersion ?? "0.0.0";
+  const config = createScanConfig({
+    root: input.root,
+    docsGlobs: ["README.md", "docs/**/*.md"],
+    ignoreGlobs: ["node_modules/**", "dist/**", "coverage/**"],
+    changedOnly: false,
+    failOn: "none",
+    outputFormat: "json",
+    maxFileSizeBytes: 1000000
+  });
+
+  return createScanReport({
+    repoRoot: input.root,
+    scannedAt,
+    scannerVersion,
+    config,
+    documents: claimsResult.documents,
+    claims: claimsResult.claims,
+    facts: factsResult.facts,
+    findings,
+    warnings: [...claimsResult.warnings, ...factsResult.warnings],
+    markdown: renderMarkdownFindings(findings)
+  });
+}
+
 function compareFindings(left: Finding, right: Finding): number {
   return (
     severityOrder.indexOf(left.severity) - severityOrder.indexOf(right.severity) ||
@@ -558,6 +594,310 @@ function compareFindings(left: Finding, right: Finding): number {
     left.documentLine - right.documentLine ||
     left.ruleId.localeCompare(right.ruleId)
   );
+}
+
+function runRules(claims: readonly Claim[], facts: readonly CodeFact[]): Finding[] {
+  return [
+    ...findMissingReferencedFiles(claims, facts),
+    ...findMissingPackageScripts(claims, facts),
+    ...findEnvVarsNotDocumented(claims, facts),
+    ...findDocumentedEnvVarsNotUsed(claims, facts),
+    ...findStaleRoutes(claims, facts),
+    ...findBrokenMarkdownAnchors(claims, facts),
+    ...findMissingScreenshots(claims, facts),
+    ...findWorkflowMissingScripts(facts)
+  ];
+}
+
+function findMissingReferencedFiles(
+  claims: readonly Claim[],
+  facts: readonly CodeFact[]
+): Finding[] {
+  const existingPaths = new Set(
+    facts.filter((fact) => fact.kind === "file_exists").map((fact) => fact.value)
+  );
+
+  return claims
+    .filter((claim) => claim.kind === "file_ref")
+    .filter((claim) => !existingPaths.has(stripAnchor(claim.normalizedValue)))
+    .map((claim) =>
+      createFinding({
+        ruleId: "missing-referenced-file",
+        severity: claim.documentPath.toLowerCase() === "readme.md" ? "medium" : "low",
+        title: "Documented relative file path does not exist",
+        body: evidenceBody(
+          `${claim.documentPath} links to \`${claim.normalizedValue}\`.`,
+          `\`${stripAnchor(claim.normalizedValue)}\` is not present in the fixture file tree.`
+        ),
+        documentPath: claim.documentPath,
+        documentLine: claim.lineNumber,
+        claimId: claim.id,
+        relatedFactIds: [],
+        suggestedEdit: `Create ${stripAnchor(claim.normalizedValue)} or remove the stale link from ${claim.documentPath}.`,
+        falsePositiveNote:
+          "The referenced path may be generated or supplied outside the repository."
+      })
+    );
+}
+
+function findMissingPackageScripts(
+  claims: readonly Claim[],
+  facts: readonly CodeFact[]
+): Finding[] {
+  const scriptFacts = facts.filter((fact) => fact.kind === "package_script");
+  const scriptNames = new Set(scriptFacts.map((fact) => fact.value));
+  const definedScripts = formatList([...scriptNames].sort());
+
+  return claims
+    .filter((claim) => claim.kind === "package_script")
+    .filter((claim) => !scriptNames.has(claim.normalizedValue))
+    .map((claim) =>
+      createFinding({
+        ruleId: "missing-package-script",
+        severity: ["dev", "build", "test", "test:e2e"].includes(claim.normalizedValue)
+          ? "high"
+          : "medium",
+        title: "Documented package script does not exist",
+        body: evidenceBody(
+          `${claim.documentPath} says to run \`${claim.rawText}\`.`,
+          `package.json defines scripts ${definedScripts}, but not \`${claim.normalizedValue}\`.`
+        ),
+        documentPath: claim.documentPath,
+        documentLine: claim.lineNumber,
+        claimId: claim.id,
+        relatedFactIds: scriptFacts.map((fact) => fact.id),
+        suggestedEdit: `Update the README command or add a \`${claim.normalizedValue}\` script to package.json.`,
+        falsePositiveNote:
+          "A script may exist in another workspace package that is outside the scan scope."
+      })
+    );
+}
+
+function findEnvVarsNotDocumented(claims: readonly Claim[], facts: readonly CodeFact[]): Finding[] {
+  const documentedEnvVars = new Set([
+    ...claims.filter((claim) => claim.kind === "env_var").map((claim) => claim.normalizedValue),
+    ...facts
+      .filter(
+        (fact) => fact.kind === "env_var_declared" && fact.metadataJson.envSource === "example"
+      )
+      .map((fact) => fact.value)
+  ]);
+
+  return facts
+    .filter(
+      (fact) =>
+        fact.kind === "env_var_declared" && fact.metadataJson.envSource === "source_reference"
+    )
+    .filter((fact) => !documentedEnvVars.has(fact.value))
+    .map((fact) =>
+      createFinding({
+        ruleId: "env-var-not-documented",
+        severity: envVarLooksSensitive(fact.value) ? "high" : "medium",
+        title: "Source env var is not documented",
+        body: evidenceBody(
+          `Source code reads \`${fact.value}\`.`,
+          `${documentationSurfaceForEnv(claims, facts)} document ${formatEnvList(documentedEnvVars)}, but not \`${fact.value}\`.`
+        ),
+        documentPath: fact.sourcePath,
+        documentLine: fact.lineNumber,
+        claimId: fact.id,
+        relatedFactIds: [fact.id],
+        suggestedEdit: `Document ${fact.value} in setup docs or .env.example, or remove the unused source reference.`,
+        falsePositiveNote: "The env var may be documented outside Markdown or env example files."
+      })
+    );
+}
+
+function findDocumentedEnvVarsNotUsed(
+  claims: readonly Claim[],
+  facts: readonly CodeFact[]
+): Finding[] {
+  const sourceEnvVars = new Set(
+    facts
+      .filter(
+        (fact) =>
+          fact.kind === "env_var_declared" && fact.metadataJson.envSource === "source_reference"
+      )
+      .map((fact) => fact.value)
+  );
+  const documentedClaims = claims.filter((claim) => claim.kind === "env_var");
+
+  return documentedClaims
+    .filter((claim) => !sourceEnvVars.has(claim.normalizedValue))
+    .map((claim) =>
+      createFinding({
+        ruleId: "documented-env-var-not-used",
+        severity: "low",
+        title: "Documented env var is not referenced by source",
+        body: evidenceBody(
+          `${claim.documentPath} tells users to set \`${claim.normalizedValue}\`.`,
+          `The fixture source and .env.example reference ${formatEnvList(sourceEnvVars)}, but not \`${claim.normalizedValue}\`.`
+        ),
+        documentPath: claim.documentPath,
+        documentLine: claim.lineNumber,
+        claimId: claim.id,
+        relatedFactIds: facts
+          .filter((fact) => fact.kind === "env_var_declared" && sourceEnvVars.has(fact.value))
+          .map((fact) => fact.id),
+        suggestedEdit: `Remove ${claim.normalizedValue} from setup docs or add the source/config reference that uses it.`,
+        falsePositiveNote:
+          "The env var may be consumed by runtime infrastructure outside the scanned source."
+      })
+    );
+}
+
+function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): Finding[] {
+  const routeFacts = facts.filter((fact) => fact.kind === "route_exists");
+  const routeValues = new Set(routeFacts.map((fact) => fact.value));
+  const routeList = formatList([...routeValues].sort(compareRouteDisplayValues));
+  const isFastApi = routeFacts.some((fact) => fact.metadataJson.framework === "fastapi");
+
+  return claims
+    .filter((claim) => claim.kind === "route")
+    .filter((claim) => !routeValues.has(claim.normalizedValue))
+    .map((claim) => {
+      const sourceFile = routeFacts[0]?.sourcePath ?? "source files";
+      return createFinding({
+        ruleId: "stale-route-mention",
+        severity: "medium",
+        title: isFastApi
+          ? "Documented FastAPI route was not found"
+          : "Documented route was not found in the app router",
+        body: evidenceBody(
+          isFastApi
+            ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
+            : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
+          isFastApi
+            ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
+            : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
+        ),
+        documentPath: claim.documentPath,
+        documentLine: claim.lineNumber,
+        claimId: claim.id,
+        relatedFactIds: routeFacts.map((fact) => fact.id),
+        suggestedEdit: isFastApi
+          ? "Update the API docs or add the missing FastAPI route."
+          : `Update the route mention or add an app${claim.normalizedValue}/page.tsx route.`,
+        falsePositiveNote:
+          "The route may be created dynamically or by middleware outside supported conventions."
+      });
+    });
+}
+
+function findBrokenMarkdownAnchors(
+  claims: readonly Claim[],
+  facts: readonly CodeFact[]
+): Finding[] {
+  const existingPaths = new Set(
+    facts.filter((fact) => fact.kind === "file_exists").map((fact) => fact.value)
+  );
+  const anchorFacts = facts.filter(
+    (fact) => fact.kind === "config_key" && fact.metadataJson.configType === "markdown_anchor"
+  );
+  const anchors = new Set(anchorFacts.map((fact) => fact.value));
+
+  return claims
+    .filter((claim) => claim.kind === "file_ref" && claim.normalizedValue.includes("#"))
+    .filter((claim) => existingPaths.has(stripAnchor(claim.normalizedValue)))
+    .filter((claim) => !anchors.has(claim.normalizedValue))
+    .map((claim) => {
+      const fileAnchors = anchorFacts
+        .filter((fact) => fact.sourcePath === stripAnchor(claim.normalizedValue))
+        .map((fact) => `#${fact.value.split("#")[1]}`)
+        .sort();
+
+      return createFinding({
+        ruleId: "broken-markdown-anchor",
+        severity: "medium",
+        title: "Markdown link points to a missing heading anchor",
+        body: evidenceBody(
+          `${claim.documentPath} links to \`${claim.normalizedValue}\`.`,
+          `\`${stripAnchor(claim.normalizedValue)}\` exists, but it only defines the ${formatList(fileAnchors)} anchors.`
+        ),
+        documentPath: claim.documentPath,
+        documentLine: claim.lineNumber,
+        claimId: claim.id,
+        relatedFactIds: anchorFacts.map((fact) => fact.id),
+        suggestedEdit: `Change the link to an existing heading or add an \`${headingFromAnchor(claim.normalizedValue)}\` heading to ${stripAnchor(claim.normalizedValue)}.`,
+        falsePositiveNote: "Anchor generation can vary across Markdown renderers."
+      });
+    });
+}
+
+function findMissingScreenshots(claims: readonly Claim[], facts: readonly CodeFact[]): Finding[] {
+  const existingPaths = new Set(
+    facts.filter((fact) => fact.kind === "file_exists").map((fact) => fact.value)
+  );
+
+  return claims
+    .filter((claim) => claim.kind === "image_ref")
+    .filter((claim) => !existingPaths.has(claim.normalizedValue))
+    .map((claim) =>
+      createFinding({
+        ruleId: "missing-screenshot",
+        severity: claim.documentPath.toLowerCase() === "readme.md" ? "medium" : "low",
+        title: "Documented image path does not exist",
+        body: evidenceBody(
+          `${claim.documentPath} references \`${claim.normalizedValue}\`.`,
+          `\`${claim.normalizedValue}\` is not present in the fixture file tree.`
+        ),
+        documentPath: claim.documentPath,
+        documentLine: claim.lineNumber,
+        claimId: claim.id,
+        relatedFactIds: [],
+        suggestedEdit: "Add the missing image or remove the stale screenshot reference.",
+        falsePositiveNote: "The image may be generated by a build step outside the scanner."
+      })
+    );
+}
+
+function findWorkflowMissingScripts(facts: readonly CodeFact[]): Finding[] {
+  const scriptFacts = facts.filter((fact) => fact.kind === "package_script");
+  const scriptNames = new Set(scriptFacts.map((fact) => fact.value));
+  const definedScripts = formatList([...scriptNames].sort());
+
+  return facts
+    .filter((fact) => fact.kind === "command_surface")
+    .map((fact) => ({ fact, scriptName: parsePackageScriptCommand(fact.value) }))
+    .filter(
+      (entry): entry is { fact: CodeFact; scriptName: string } => entry.scriptName !== undefined
+    )
+    .filter((entry) => !scriptNames.has(entry.scriptName))
+    .map(({ fact, scriptName }) =>
+      createFinding({
+        ruleId: "workflow-references-missing-script",
+        severity: "high",
+        title: "Workflow references a package script that does not exist",
+        body: evidenceBody(
+          `The CI workflow runs \`${fact.value}\`.`,
+          `package.json defines scripts ${definedScripts}, but not \`${scriptName}\`.`
+        ),
+        documentPath: fact.sourcePath,
+        documentLine: fact.lineNumber,
+        claimId: fact.id,
+        relatedFactIds: [fact.id, ...scriptFacts.map((scriptFact) => scriptFact.id)],
+        suggestedEdit: `Change the workflow command or add a \`${scriptName}\` script to package.json.`,
+        falsePositiveNote:
+          "The workflow may run in a subdirectory with a separate package manifest."
+      })
+    );
+}
+
+function renderMarkdownFindings(findings: readonly Finding[]): string {
+  if (findings.length === 0) {
+    return "# Docs Debt Report\n\nNo findings.\n";
+  }
+
+  return [
+    "# Docs Debt Report",
+    "",
+    ...[...findings]
+      .sort(compareFindings)
+      .map(
+        (finding) =>
+          `## ${finding.severity.toUpperCase()}: ${finding.title}\n\n${finding.documentPath}:${finding.documentLine}\n\n${finding.body}\n\nSuggested edit: ${finding.suggestedEdit}\n`
+      )
+  ].join("\n");
 }
 
 interface RepositoryEntry {
@@ -942,6 +1282,79 @@ function compareFacts(left: CodeFact, right: CodeFact): number {
     left.lineNumber - right.lineNumber ||
     left.value.localeCompare(right.value)
   );
+}
+
+function evidenceBody(claim: string, currentFact: string): string {
+  return `Claim: ${claim}\nCurrent fact: ${currentFact}`;
+}
+
+function stripAnchor(value: string): string {
+  return value.split("#")[0] ?? value;
+}
+
+function headingFromAnchor(value: string): string {
+  const anchor = value.split("#")[1] ?? value;
+  return anchor
+    .split("-")
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+function formatList(values: Iterable<string>): string {
+  const list = [...values];
+
+  if (list.length === 0) {
+    return "nothing";
+  }
+
+  if (list.length === 1) {
+    return `\`${list[0]}\``;
+  }
+
+  return `${list
+    .slice(0, -1)
+    .map((value) => `\`${value}\``)
+    .join(", ")} and \`${list[list.length - 1]}\``;
+}
+
+function formatEnvList(values: Iterable<string>): string {
+  return formatList([...values].sort());
+}
+
+function envVarLooksSensitive(value: string): boolean {
+  return /(?:KEY|TOKEN|SECRET|DATABASE|AUTH|PASSWORD)/.test(value);
+}
+
+function documentationSurfaceForEnv(claims: readonly Claim[], facts: readonly CodeFact[]): string {
+  const hasReadmeMention = claims.some((claim) => claim.kind === "env_var");
+  const hasEnvExample = facts.some(
+    (fact) => fact.kind === "env_var_declared" && fact.metadataJson.envSource === "example"
+  );
+
+  if (hasReadmeMention && hasEnvExample) {
+    return "README.md and .env.example";
+  }
+
+  if (hasReadmeMention) {
+    return "README.md";
+  }
+
+  if (hasEnvExample) {
+    return ".env.example";
+  }
+
+  return "The scanned docs";
+}
+
+function compareRouteDisplayValues(left: string, right: string): number {
+  const leftIsApi = left.startsWith("/api/");
+  const rightIsApi = right.startsWith("/api/");
+
+  if (leftIsApi !== rightIsApi) {
+    return leftIsApi ? 1 : -1;
+  }
+
+  return left.localeCompare(right);
 }
 
 function extractClaimsFromDocument(document: DocumentFile): Claim[] {

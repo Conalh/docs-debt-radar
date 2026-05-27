@@ -83,4 +83,33 @@ describe("createCliHelp", () => {
     );
     expect(result.stderr).toBe("");
   });
+
+  it("prints docs debt findings as JSON by default", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "json"
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    const output = JSON.parse(result.stdout) as {
+      summaryJson: {
+        totalFindings: number;
+      };
+      findingsJson: Array<{
+        ruleId: string;
+        severity: string;
+      }>;
+    };
+
+    expect(output.summaryJson.totalFindings).toBe(2);
+    expect(output.findingsJson).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ruleId: "missing-package-script", severity: "high" }),
+        expect.objectContaining({ ruleId: "missing-referenced-file", severity: "medium" })
+      ])
+    );
+    expect(result.stderr).toBe("");
+  });
 });

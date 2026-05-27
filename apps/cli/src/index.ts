@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { scanMarkdownClaims, scanRepositoryFacts } from "@docs-debt-radar/core";
+import { scanDocsDebt, scanMarkdownClaims, scanRepositoryFacts } from "@docs-debt-radar/core";
 
 export interface CliResult {
   exitCode: number;
@@ -52,17 +52,11 @@ export async function runCli(args: string[]): Promise<CliResult> {
   const claimsOnly = args.includes("--claims");
   const factsOnly = args.includes("--facts");
 
-  if (!claimsOnly && !factsOnly) {
-    return {
-      exitCode: 2,
-      stdout: "",
-      stderr: "Use `scan <path> --claims` or `scan <path> --facts` in the current MVP.\n"
-    };
-  }
-
   const result = claimsOnly
     ? await scanMarkdownClaims({ root: targetPath })
-    : await scanRepositoryFacts({ root: targetPath });
+    : factsOnly
+      ? await scanRepositoryFacts({ root: targetPath })
+      : await scanDocsDebt({ root: targetPath });
 
   if (format === "json") {
     return {
@@ -80,6 +74,20 @@ export async function runCli(args: string[]): Promise<CliResult> {
           .map((fact) => `${fact.sourcePath}:${fact.lineNumber} ${fact.kind} ${fact.value}`)
           .join("\n")
           .concat(result.facts.length > 0 ? "\n" : ""),
+        stderr: ""
+      };
+    }
+
+    if ("findingsJson" in result) {
+      return {
+        exitCode: 0,
+        stdout: result.findingsJson
+          .map(
+            (finding) =>
+              `${finding.documentPath}:${finding.documentLine} ${finding.severity} ${finding.ruleId} ${finding.title}`
+          )
+          .join("\n")
+          .concat(result.findingsJson.length > 0 ? "\n" : ""),
         stderr: ""
       };
     }

@@ -22,6 +22,7 @@ The first V1 behavior is defined by product docs and fixtures:
 - [Evidence model](docs/product/evidence-model.md)
 - [Markdown claim extraction](docs/product/markdown-claim-extraction.md)
 - [Repository fact extraction](docs/product/repository-fact-extraction.md)
+- [Rules engine](docs/product/rules-engine.md)
 - [Fixture manifest](tests/fixtures/fixture-manifest.json)
 
 The fixture set currently covers a basic Node package, a Next.js app, a FastAPI app, a GitHub Actions workflow, and docs assets/env examples. Each fixture includes an `expected-report.json` file so scanner behavior can be developed against concrete examples.
@@ -42,6 +43,12 @@ Current fact-extraction MVP:
 
 ```bash
 docs-debt-radar scan tests/fixtures/github-actions-drift --facts --format json
+```
+
+Current findings scan:
+
+```bash
+docs-debt-radar scan tests/fixtures/basic-node-drift --format json
 ```
 
 The scanner will:

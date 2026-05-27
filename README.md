@@ -1,33 +1,51 @@
 # Docs Debt Radar
 
-Docs Debt Radar finds documentation drift before users, contributors, or coding agents trip over it. It scans README and docs files for checkable claims, compares those claims with the current repository, and reports stale commands, missing files, broken anchors, undocumented env vars, stale routes, missing screenshots, and workflow drift.
+**A documentation truth layer for fast-moving repos.** README claims, setup docs, workflow snippets, route mentions, env vars, and screenshot links are turned into evidence-backed findings when they drift away from the code.
+
+```text
+README / docs ──► claims ─┐
+package.json  ──► facts   ├──► rules ──► CLI report / GitHub Action / viewer
+routes, envs  ──► facts   ┘
+```
+
+Ships as a local TypeScript CLI, a composite GitHub Action, and an optional static report viewer. No network access is needed for local scans, and the default Action posture is report-only.
+
+## Why This Exists
+
+Docs rot because they make claims:
+
+- run this script
+- open this route
+- set this env var
+- see this file
+- trust this screenshot
+- follow this workflow
+
+When those claims go stale, users lose time and coding agents follow bad instructions. Docs Debt Radar treats documentation as a checkable surface. Every finding points back to the exact document line, the current repository fact, the rule that connected them, and the next edit to make.
+
+The bias is conservative: fewer findings with stronger evidence beats noisy linting.
 
 ## Quick Start
-
-Install dependencies and build the local CLI:
 
 ```bash
 pnpm install
 pnpm build
-```
-
-Run a scan:
-
-```bash
 docs-debt-radar scan . --format markdown
 ```
 
-Write a report and fail CI only when high-severity findings are visible:
+Write a report and fail only on high-severity visible findings:
 
 ```bash
 docs-debt-radar scan . --format markdown --write-report docs-debt-report.md --fail-on high
 ```
 
-Use the GitHub Action in report-only mode:
+Use it in GitHub Actions:
 
 ```yaml
 - uses: actions/checkout@v4
 - uses: conalh/docs-debt-radar@v1
+  with:
+    fail-on: high
 ```
 
 ## Demo
@@ -52,29 +70,58 @@ MEDIUM README.md:10 missing-referenced-file
 README.md links to `docs/cli.md`, but that file is not present.
 ```
 
-See the generated sample reports:
+Generated reports:
 
 - [Markdown sample report](docs/demo/basic-node-drift-report.md)
 - [JSON sample report](docs/demo/basic-node-drift-report.json)
 
-Generate the same demo locally:
+Reproduce it:
 
 ```bash
 docs-debt-radar scan tests/fixtures/basic-node-drift --format markdown
 ```
 
-## What It Checks
+## The Evidence Model
 
-Docs Debt Radar currently extracts:
+Four records drive the scanner:
 
-- Markdown links, image links, anchors, inline code, and fenced shell snippets.
-- File and directory existence.
-- `package.json` scripts.
-- Env vars from source and examples.
-- Next.js and FastAPI routes.
-- GitHub Actions workflow commands.
+| Record         | What it captures                                        | Example                       |
+| -------------- | ------------------------------------------------------- | ----------------------------- |
+| `DocumentFile` | Markdown text, headings, links, code spans, code blocks | `README.md`                   |
+| `Claim`        | Checkable doc statement with line number                | `npm run test:e2e`            |
+| `CodeFact`     | Current repository truth                                | package scripts `dev`, `test` |
+| `Finding`      | Claim/fact mismatch with severity and suggested edit    | missing package script        |
 
-Implemented rules are documented in [Rules](docs/product/rules.md).
+Modeling choices worth flagging:
+
+- Claims keep raw text and normalized values so reports can quote the doc and still compare stable keys.
+- Facts are deliberately boring: file existence, package scripts, env declarations, routes, workflows, anchors.
+- Findings carry false-positive notes because suppression should be a conscious decision, not a hidden ignore.
+- Suppressed findings are counted and listed separately in JSON so teams can see what they are choosing not to fix.
+
+## The Rule Layer
+
+Rules-based, not semantic guesswork. Current rules:
+
+```text
+missing-referenced-file              docs link to a path that is absent
+missing-package-script               docs mention a package script that is absent
+env-var-not-documented               source reads an env var docs do not mention
+documented-env-var-not-used          docs mention an env var source does not read
+stale-route-mention                  docs mention a route not found by supported extractors
+broken-markdown-anchor               docs link to a missing heading anchor
+missing-screenshot                   docs reference an image path that is absent
+workflow-references-missing-script   workflow runs a package script that is absent
+```
+
+Inspect the live rule metadata:
+
+```bash
+docs-debt-radar list-rules
+docs-debt-radar explain missing-package-script
+```
+
+Rule docs live in [docs/product/rules.md](docs/product/rules.md).
 
 ## CLI
 
@@ -84,8 +131,6 @@ docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --docs README.md docs/setup.md
 docs-debt-radar scan . --fail-on high
-docs-debt-radar list-rules
-docs-debt-radar explain missing-package-script
 ```
 
 Exit codes:
@@ -96,7 +141,7 @@ Exit codes:
 
 ## Suppressions
 
-Known exceptions must include a reason:
+Known exceptions require reasons:
 
 ```markdown
 <!-- docs-debt-disable-next-line missing-referenced-file: generated by release packaging -->
@@ -104,29 +149,15 @@ Known exceptions must include a reason:
 See [generated docs](docs/generated.md).
 ```
 
-See [Suppressions and trust controls](docs/product/suppressions.md).
+Config suppressions live in `.docs-debt-radar.json`; see [Configuration](docs/product/configuration.md) and [Suppressions](docs/product/suppressions.md).
 
-## GitHub Action
+## Report Viewer
 
-```yaml
-name: Docs Debt Radar
-
-on:
-  pull_request:
-  push:
-    branches: [main]
-
-jobs:
-  docs-debt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: conalh/docs-debt-radar@v1
-        with:
-          fail-on: high
+```bash
+pnpm --filter @docs-debt-radar/web build
 ```
 
-The default Action mode is report-only. It writes a Markdown job summary and uploads the generated report artifact. See [GitHub Action](docs/product/github-action.md).
+Open `apps/web/index.html` and load a JSON report. The viewer is optional; the CLI and Action remain complete without it.
 
 ## Examples
 
@@ -134,28 +165,6 @@ The default Action mode is report-only. It writes a Markdown job summary and upl
 - [Next.js](docs/examples/nextjs.md)
 - [FastAPI](docs/examples/fastapi.md)
 - [GitHub Actions workflow](docs/examples/github-actions.md)
-
-## Optional Report Viewer
-
-```bash
-pnpm --filter @docs-debt-radar/web build
-```
-
-Open `apps/web/index.html` and load a JSON report to inspect summary counts, filters, finding details, and export links. The CLI and GitHub Action remain fully useful without the viewer.
-
-## Product Docs
-
-- [Configuration](docs/product/configuration.md)
-- [Rules](docs/product/rules.md)
-- [Severity model](docs/product/severity-model.md)
-- [V1 scope](docs/product/v1-scope.md)
-- [Evidence model](docs/product/evidence-model.md)
-- [Markdown claim extraction](docs/product/markdown-claim-extraction.md)
-- [Repository fact extraction](docs/product/repository-fact-extraction.md)
-- [CLI product loop](docs/product/cli-product-loop.md)
-- [Suppressions and trust controls](docs/product/suppressions.md)
-- [GitHub Action](docs/product/github-action.md)
-- [Fixture manifest](tests/fixtures/fixture-manifest.json)
 
 ## Development
 
@@ -168,16 +177,18 @@ pnpm test
 pnpm build
 ```
 
-## Project Layout
+Project layout:
 
 ```text
-apps/
-  action/    GitHub Action wrapper
-  cli/       Node CLI package
-  web/       Optional static report viewer
-packages/
-  core/      Shared scanner models, extractors, rules, and reports
+apps/action    GitHub Action wrapper
+apps/cli       Node CLI
+apps/web       Optional static report viewer
+packages/core  Scanner models, extractors, rules, and reports
 ```
+
+## Status
+
+Prototype / early alpha. The CLI, Action wrapper, suppressions, V1 rules, fixtures, sample reports, and static viewer exist. Release packaging, remote Action validation, and npm publishing are still future work.
 
 ## License
 

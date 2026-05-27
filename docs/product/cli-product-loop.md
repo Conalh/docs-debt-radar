@@ -54,7 +54,7 @@ docs-debt-radar scan . --fail-on high
 
 ## Output Formats
 
-- `text`: compact human-readable finding lines.
+- `text`: terminal report with summary counts, evidence, and next actions.
 - `markdown`: full Markdown report for normal scans.
 - `json`: full structured scan result.
 - `sarif`: SARIF 2.1.0 report for code-scanning tools.

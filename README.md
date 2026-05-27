@@ -39,7 +39,7 @@ From this repo:
 ```bash
 pnpm install
 pnpm build
-docs-debt-radar scan . --format markdown
+docs-debt-radar scan .
 ```
 
 Write a report and fail only on high-severity visible findings:
@@ -85,11 +85,17 @@ The fixture package only defines `dev` and `test`, and the CLI reference path do
 After:
 
 ```text
-HIGH README.md:7 missing-package-script
-README.md says to run `npm run test:e2e`, but package.json does not define it.
+Docs Debt Radar
 
-MEDIUM README.md:10 missing-referenced-file
-README.md links to `docs/cli.md`, but that file is not present.
+2 visible findings (high 1, medium 1, low 0, info 0)
+Scanned 2 documents, 5 claims, 12 facts.
+Suppressed: 0. Warnings: 0.
+
+1. HIGH README.md:7 missing-package-script
+   Documented package script does not exist
+   Claim: README.md says to run `npm run test:e2e`.
+   Current fact: package.json defines scripts `dev` and `test`, but not `test:e2e`.
+   Next action: Update the README command or add a `test:e2e` script to package.json.
 ```
 
 Generated reports:
@@ -100,7 +106,7 @@ Generated reports:
 Reproduce it:
 
 ```bash
-docs-debt-radar scan tests/fixtures/basic-node-drift --format markdown
+docs-debt-radar scan tests/fixtures/basic-node-drift
 ```
 
 ## What it checks

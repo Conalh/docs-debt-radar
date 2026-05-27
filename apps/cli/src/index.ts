@@ -224,13 +224,7 @@ function renderResult(
   }
 
   if ("findingsJson" in result) {
-    return result.findingsJson
-      .map(
-        (finding) =>
-          `${finding.documentPath}:${finding.documentLine} ${finding.severity} ${finding.ruleId} ${finding.title}`
-      )
-      .join("\n")
-      .concat(result.findingsJson.length > 0 ? "\n" : "");
+    return renderTextScanReport(result);
   }
 
   return result.claims
@@ -239,6 +233,37 @@ function renderResult(
     )
     .join("\n")
     .concat(result.claims.length > 0 ? "\n" : "");
+}
+
+function renderTextScanReport(report: ScanReport): string {
+  const summary = report.summaryJson;
+  const lines = [
+    "Docs Debt Radar",
+    "",
+    `${summary.totalFindings} visible finding${summary.totalFindings === 1 ? "" : "s"} (${formatSeveritySummary(summary.bySeverity)})`,
+    `Scanned ${summary.scannedDocumentCount} document${summary.scannedDocumentCount === 1 ? "" : "s"}, ${summary.claimCount} claim${summary.claimCount === 1 ? "" : "s"}, ${summary.factCount} fact${summary.factCount === 1 ? "" : "s"}.`,
+    `Suppressed: ${summary.suppressedFindingCount}. Warnings: ${summary.warningCount}.`,
+    ""
+  ];
+
+  if (report.findingsJson.length === 0) {
+    return [...lines, "No findings.", ""].join("\n");
+  }
+
+  return [
+    ...lines,
+    ...report.findingsJson.flatMap((finding, index) => [
+      `${index + 1}. ${finding.severity.toUpperCase()} ${finding.documentPath}:${finding.documentLine} ${finding.ruleId}`,
+      `   ${finding.title}`,
+      ...finding.body.split("\n").map((line) => `   ${line}`),
+      `   Next action: ${finding.suggestedEdit}`,
+      ""
+    ])
+  ].join("\n");
+}
+
+function formatSeveritySummary(counts: Record<Severity, number>): string {
+  return `high ${counts.high}, medium ${counts.medium}, low ${counts.low}, info ${counts.info}`;
 }
 
 function renderPatchReport(report: ScanReport): string {

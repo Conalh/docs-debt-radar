@@ -127,6 +127,24 @@ describe("createCliHelp", () => {
     expect(result.stderr).toBe("");
   });
 
+  it("prints a readable text report by default", async () => {
+    const result = await runCli(["scan", join(process.cwd(), "tests/fixtures/basic-node-drift")]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("Docs Debt Radar");
+    expect(result.stdout).toContain("2 visible findings (high 1, medium 1, low 0, info 0)");
+    expect(result.stdout).toContain("Scanned 2 documents, 5 claims, 12 facts.");
+    expect(result.stdout).toContain("1. HIGH README.md:7 missing-package-script");
+    expect(result.stdout).toContain("Claim: README.md says to run `npm run test:e2e`.");
+    expect(result.stdout).toContain(
+      "Current fact: package.json defines scripts `dev` and `test`, but not `test:e2e`."
+    );
+    expect(result.stdout).toContain(
+      "Next action: Update the README command or add a `test:e2e` script to package.json."
+    );
+    expect(result.stderr).toBe("");
+  });
+
   it("restricts scanned documentation with --docs", async () => {
     const result = await runCli([
       "scan",

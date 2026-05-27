@@ -6,7 +6,7 @@ Docs Debt Radar is intentionally small in V1. Most behavior is controlled throug
 
 | Option                   | Purpose                                                          |
 | ------------------------ | ---------------------------------------------------------------- |
-| `--format text`          | Compact terminal finding lines.                                  |
+| `--format text`          | Terminal report with summary, evidence, and next actions.        |
 | `--format markdown`      | Human-readable Markdown report.                                  |
 | `--format json`          | Full structured scan report.                                     |
 | `--format sarif`         | SARIF 2.1.0 report for code-scanning compatible consumers.       |

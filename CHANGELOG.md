@@ -22,3 +22,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Reworked the public README and added demo reports, configuration docs, rule docs, and project-shape examples.
 - Added the optional static report viewer for local JSON report inspection.
 - Added release-readiness packaging metadata, package surface audits, packed CLI smoke tests, compatibility notes, and an MIT license.
+- Added SARIF 2.1.0 output for code-scanning compatible docs debt reports.

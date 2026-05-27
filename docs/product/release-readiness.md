@@ -36,6 +36,16 @@ pnpm smoke:packed
 
 The smoke script builds both publishable packages, creates tarballs, installs them into a clean machine-style temporary npm project, and runs the installed `docs-debt-radar` bin against the basic fixture.
 
+## SARIF Output
+
+Post-V1 scans can emit SARIF 2.1.0 for code-scanning compatible consumers:
+
+```bash
+docs-debt-radar scan . --format sarif --write-report docs-debt-radar.sarif
+```
+
+SARIF output keeps docs debt as documentation findings, not security findings. High severity maps to SARIF `error`, medium maps to `warning`, and low/info map to `note`.
+
 ## Release Checklist
 
 1. Run `pnpm format`.

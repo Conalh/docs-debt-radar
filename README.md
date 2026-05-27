@@ -129,6 +129,7 @@ Rule docs live in [docs/product/rules.md](docs/product/rules.md).
 docs-debt-radar scan . --format text
 docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
+docs-debt-radar scan . --format sarif
 docs-debt-radar scan . --docs README.md docs/setup.md
 docs-debt-radar scan . --fail-on high
 ```
@@ -138,6 +139,8 @@ Exit codes:
 - `0`: scan completed and no visible finding met the fail threshold.
 - `1`: scan completed and at least one visible finding met the fail threshold.
 - `2`: invalid command, option, unsupported changed-only mode, or runtime/config error.
+
+Use `--format sarif` when you want a code-scanning compatible report with finding locations, rule metadata, and suggested edits.
 
 ## Suppressions
 

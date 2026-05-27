@@ -15,7 +15,7 @@ afterEach(async () => {
 describe("createCliHelp", () => {
   it("documents the initial scan command surface", () => {
     expect(createCliHelp()).toContain("docs-debt-radar scan <path>");
-    expect(createCliHelp()).toContain("--format <text|markdown|json>");
+    expect(createCliHelp()).toContain("--format <text|markdown|json|sarif>");
     expect(createCliHelp()).toContain("--fail-on <none|info|low|medium|high>");
   });
 
@@ -160,6 +160,81 @@ describe("createCliHelp", () => {
     expect(result.stdout).toContain("# Docs Debt Report");
     expect(result.stdout).toContain("## HIGH: Documented package script does not exist");
     expect(await readFile(reportPath, "utf8")).toBe(result.stdout);
+    expect(result.stderr).toBe("");
+  });
+
+  it("prints SARIF reports for code-scanning compatible docs debt findings", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "sarif"
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    const output = JSON.parse(result.stdout) as {
+      version: string;
+      $schema: string;
+      runs: Array<{
+        tool: {
+          driver: {
+            name: string;
+            rules: Array<{
+              id: string;
+              name: string;
+              shortDescription: { text: string };
+              help: { text: string };
+            }>;
+          };
+        };
+        results: Array<{
+          ruleId: string;
+          level: string;
+          message: { text: string };
+          locations: Array<{
+            physicalLocation: {
+              artifactLocation: { uri: string };
+              region: { startLine: number };
+            };
+          }>;
+          properties: {
+            docsDebtSeverity: string;
+            suggestedEdit: string;
+          };
+        }>;
+      }>;
+    };
+
+    expect(output.version).toBe("2.1.0");
+    expect(output.$schema).toContain("sarif-schema-2.1.0.json");
+    expect(output.runs[0]?.tool.driver.name).toBe("Docs Debt Radar");
+    expect(output.runs[0]?.tool.driver.rules).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "missing-package-script",
+          shortDescription: { text: "Documented package script does not exist" }
+        })
+      ])
+    );
+    expect(output.runs[0]?.results).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          ruleId: "missing-package-script",
+          level: "error",
+          locations: [
+            {
+              physicalLocation: {
+                artifactLocation: { uri: "README.md" },
+                region: { startLine: 7 }
+              }
+            }
+          ],
+          properties: expect.objectContaining({
+            docsDebtSeverity: "high"
+          })
+        })
+      ])
+    );
     expect(result.stderr).toBe("");
   });
 

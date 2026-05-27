@@ -9,6 +9,7 @@ Docs Debt Radar is intentionally small in V1. Most behavior is controlled throug
 | `--format text`         | Compact terminal finding lines.                                  |
 | `--format markdown`     | Human-readable Markdown report.                                  |
 | `--format json`         | Full structured scan report.                                     |
+| `--format sarif`        | SARIF 2.1.0 report for code-scanning compatible consumers.       |
 | `--write-report <path>` | Write the selected output format to disk.                        |
 | `--fail-on <threshold>` | Return exit code `1` when a visible finding meets the threshold. |
 | `--docs <path...>`      | Restrict Markdown docs scanned for claims.                       |

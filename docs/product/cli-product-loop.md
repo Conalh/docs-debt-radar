@@ -10,6 +10,7 @@ Primary scan:
 docs-debt-radar scan . --format text
 docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
+docs-debt-radar scan . --format sarif
 ```
 
 Development inspection helpers:
@@ -51,5 +52,6 @@ docs-debt-radar scan . --fail-on high
 - `text`: compact human-readable finding lines.
 - `markdown`: full Markdown report for normal scans.
 - `json`: full structured scan result.
+- `sarif`: SARIF 2.1.0 report for code-scanning tools.
 
-Markdown output is only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.
+Markdown and SARIF output are only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.

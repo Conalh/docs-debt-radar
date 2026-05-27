@@ -27,7 +27,7 @@ export function createCliHelp(): string {
     "  docs-debt-radar scan <path> [options]",
     "",
     "Options:",
-    "  --format <text|markdown|json>       Output format",
+    "  --format <text|markdown|json|sarif> Output format",
     "  --claims                            Print extracted Markdown claims",
     "  --facts                             Print extracted repository facts",
     "  --docs <path...>                    Restrict Markdown docs scanned for claims",
@@ -150,6 +150,14 @@ function renderResult(
     return `${JSON.stringify(result, null, 2)}\n`;
   }
 
+  if (format === "sarif") {
+    if ("findingsJson" in result) {
+      return `${JSON.stringify(renderSarifReport(result), null, 2)}\n`;
+    }
+
+    return new Error("SARIF output is only supported for full scan reports.");
+  }
+
   if (format === "markdown") {
     if ("findingsJson" in result) {
       return result.markdown;
@@ -185,6 +193,135 @@ function renderResult(
     )
     .join("\n")
     .concat(result.claims.length > 0 ? "\n" : "");
+}
+
+interface SarifLog {
+  $schema: string;
+  version: "2.1.0";
+  runs: SarifRun[];
+}
+
+interface SarifRun {
+  tool: {
+    driver: {
+      name: "Docs Debt Radar";
+      informationUri: string;
+      rules: SarifRule[];
+    };
+  };
+  results: SarifResult[];
+}
+
+interface SarifRule {
+  id: string;
+  name: string;
+  shortDescription: {
+    text: string;
+  };
+  help: {
+    text: string;
+  };
+  properties: {
+    tags: string[];
+  };
+}
+
+interface SarifResult {
+  ruleId: string;
+  level: "error" | "warning" | "note";
+  message: {
+    text: string;
+  };
+  locations: Array<{
+    physicalLocation: {
+      artifactLocation: {
+        uri: string;
+      };
+      region: {
+        startLine: number;
+      };
+    };
+  }>;
+  properties: {
+    docsDebtSeverity: Severity;
+    suggestedEdit: string;
+    falsePositiveNote: string;
+  };
+}
+
+function renderSarifReport(report: ScanReport): SarifLog {
+  const rulesById = new Map(V1_RULES.map((rule) => [rule.id, rule]));
+  const usedRuleIds = [...new Set(report.findingsJson.map((finding) => finding.ruleId))].sort();
+
+  return {
+    $schema: "https://docs.oasis-open.org/sarif/sarif/v2.1.0/os/schemas/sarif-schema-2.1.0.json",
+    version: "2.1.0",
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: "Docs Debt Radar",
+            informationUri: "https://github.com/conalh/docs-debt-radar",
+            rules: usedRuleIds.map((ruleId) => {
+              const rule = rulesById.get(ruleId);
+
+              return {
+                id: ruleId,
+                name: ruleId,
+                shortDescription: {
+                  text: rule?.title ?? ruleId
+                },
+                help: {
+                  text: rule
+                    ? `${rule.description}\n\nFalse-positive note: ${rule.falsePositiveNote}`
+                    : "Docs debt finding."
+                },
+                properties: {
+                  tags: ["docs-debt", "documentation"]
+                }
+              };
+            })
+          }
+        },
+        results: report.findingsJson.map((finding) => ({
+          ruleId: finding.ruleId,
+          level: sarifLevelForSeverity(finding.severity),
+          message: {
+            text: `${finding.title}\n\n${finding.body}`
+          },
+          locations: [
+            {
+              physicalLocation: {
+                artifactLocation: {
+                  uri: finding.documentPath
+                },
+                region: {
+                  startLine: finding.documentLine
+                }
+              }
+            }
+          ],
+          properties: {
+            docsDebtSeverity: finding.severity,
+            suggestedEdit: finding.suggestedEdit,
+            falsePositiveNote: finding.falsePositiveNote
+          }
+        }))
+      }
+    ]
+  };
+}
+
+function sarifLevelForSeverity(severity: Severity): "error" | "warning" | "note" {
+  if (severity === "high") {
+    return "error";
+  }
+
+  if (severity === "medium") {
+    return "warning";
+  }
+
+  return "note";
 }
 
 function readOption(args: string[], name: string): string | undefined {

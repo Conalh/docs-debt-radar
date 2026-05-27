@@ -39,3 +39,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added GitHub Actions workflow checks for missing local command files.
 - Added FastAPI `APIRouter` decorator route extraction.
 - Added Next.js Pages Router route extraction for page and API files.
+- Added Flask Blueprint `url_prefix` route extraction for literal prefixes.

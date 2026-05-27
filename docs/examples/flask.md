@@ -1,6 +1,6 @@
 # Flask Example
 
-Docs Debt Radar detects route facts from common Flask app and blueprint decorators with literal paths.
+Docs Debt Radar detects route facts from common Flask app and blueprint decorators with literal paths and literal blueprint prefixes.
 
 ## Scan
 
@@ -20,7 +20,8 @@ The route extractor handles literal decorators such as:
 
 ```python
 @app.route("/health")
-@api.route("/api/users", methods=["POST"])
+api = Blueprint("api", __name__, url_prefix="/api")
+@api.route("/users", methods=["POST"])
 ```
 
 Dynamic route registration and generated blueprints should use suppressions with reasons until a dedicated extractor can prove them safely.

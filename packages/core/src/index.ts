@@ -2033,17 +2033,43 @@ function extractFlaskRoutes(
   text: string
 ): Array<{ method: string; path: string; lineNumber: number }> {
   const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
-  const routePattern = /@\w+\.route\(\s*["']([^"']+)["']/g;
+  const blueprintPrefixes = extractFlaskBlueprintPrefixes(text);
+  const routePattern = /@(\w+)\.route\(\s*["']([^"']+)["']/g;
 
   for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
     routePattern.lastIndex = 0;
     const match = routePattern.exec(line);
-    if (match?.[1]) {
-      routes.push({ method: "route", path: match[1], lineNumber: lineIndex + 1 });
+    if (match?.[1] && match[2]) {
+      routes.push({
+        method: "route",
+        path: combineRouteParts(blueprintPrefixes.get(match[1]) ?? "", match[2]),
+        lineNumber: lineIndex + 1
+      });
     }
   }
 
   return routes;
+}
+
+function extractFlaskBlueprintPrefixes(text: string): Map<string, string> {
+  const prefixes = new Map<string, string>();
+  const blueprintPattern = /\b(\w+)\s*=\s*Blueprint\([^)]*\burl_prefix\s*=\s*["']([^"']+)["']/g;
+
+  for (const line of text.split(/\r?\n/)) {
+    blueprintPattern.lastIndex = 0;
+    const match = blueprintPattern.exec(line);
+    if (match?.[1] && match[2]) {
+      prefixes.set(match[1], match[2]);
+    }
+  }
+
+  return prefixes;
+}
+
+function combineRouteParts(prefix: string, path: string): string {
+  return (
+    `/${[prefix, path].filter(Boolean).join("/")}`.replace(/\/{2,}/g, "/").replace(/\/$/, "") || "/"
+  );
 }
 
 function looksLikeDjangoUrlConf(text: string): boolean {

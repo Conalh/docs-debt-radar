@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Docs Debt Radar Report Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="toolbar" aria-label="Report controls">
+        <div>
+          <h1>Docs Debt Radar</h1>
+          <p>Inspect JSON reports from the CLI or GitHub Action.</p>
+        </div>
+        <div class="actions">
+          <label class="file-button">
+            <input id="report-file" type="file" accept="application/json,.json" />
+            Open JSON
+          </label>
+          <button id="load-sample" type="button">Sample</button>
+          <a id="export-markdown" class="button-link" href="#">Markdown</a>
+          <a id="export-json" class="button-link" href="#">JSON</a>
+        </div>
+      </section>
+
+      <section id="summary" class="summary-grid" aria-label="Report summary">
+        <article class="summary-card">
+          <span>Total Findings</span><strong>0</strong><small>No report loaded</small>
+        </article>
+        <article class="summary-card">
+          <span>High</span><strong>0</strong><small>must fix</small>
+        </article>
+        <article class="summary-card">
+          <span>Medium</span><strong>0</strong><small>needs review</small>
+        </article>
+        <article class="summary-card">
+          <span>Suppressed</span><strong>0</strong><small>hidden with reasons</small>
+        </article>
+      </section>
+
+      <section class="workbench">
+        <aside class="finding-panel" aria-label="Findings">
+          <div class="filters">
+            <select id="severity-filter" aria-label="Severity filter">
+              <option value="all">All severities</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+              <option value="info">Info</option>
+            </select>
+            <input id="query-filter" type="search" placeholder="Search findings" />
+          </div>
+          <p id="status" class="status">Load a JSON report to begin.</p>
+          <ul id="finding-list" class="finding-list">
+            <li class="empty-state">No report loaded.</li>
+          </ul>
+        </aside>
+
+        <article id="finding-detail" class="detail-panel" aria-label="Finding detail">
+          <div class="empty-state">Open a report or load the sample report.</div>
+        </article>
+      </section>
+    </main>
+
+    <script type="module" src="./dist/report-viewer.js"></script>
+  </body>
+</html>

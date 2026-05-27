@@ -135,6 +135,14 @@ The default Action mode is report-only. It writes a Markdown job summary and upl
 - [FastAPI](docs/examples/fastapi.md)
 - [GitHub Actions workflow](docs/examples/github-actions.md)
 
+## Optional Report Viewer
+
+```bash
+pnpm --filter @docs-debt-radar/web build
+```
+
+Open `apps/web/index.html` and load a JSON report to inspect summary counts, filters, finding details, and export links. The CLI and GitHub Action remain fully useful without the viewer.
+
 ## Product Docs
 
 - [Configuration](docs/product/configuration.md)
@@ -166,7 +174,7 @@ pnpm build
 apps/
   action/    GitHub Action wrapper
   cli/       Node CLI package
-  web/       Optional report viewer placeholder
+  web/       Optional static report viewer
 packages/
   core/      Shared scanner models, extractors, rules, and reports
 ```

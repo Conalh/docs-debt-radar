@@ -40,6 +40,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
 
+  apps/web: {}
+
   packages/core:
     dependencies:
       mdast-util-to-string:

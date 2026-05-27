@@ -1,5 +1,23 @@
 # Docs Debt Radar Report Viewer
 
-This folder is reserved for the optional report viewer.
+This optional static viewer opens JSON reports produced by the CLI or GitHub Action.
 
-The viewer should consume JSON reports produced by the CLI and make findings easier to inspect with filters, summary counts, finding details, and export controls.
+## Local Use
+
+Build the viewer:
+
+```bash
+pnpm --filter @docs-debt-radar/web build
+```
+
+Open `apps/web/index.html` in a browser and choose a JSON report, or load the checked-in sample report.
+
+The viewer provides:
+
+- Summary cards.
+- Severity and text filters.
+- Finding list.
+- Finding details with claim/current fact/suggested edit sections.
+- Markdown and JSON export links.
+
+The CLI and GitHub Action remain fully useful without this viewer.

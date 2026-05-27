@@ -71,4 +71,4 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 - Agent output is a compact handoff for full scans and is not available for `--claims` or `--facts`.
 - Pull request comments are disabled by default and require `pr-comment: true` plus `github-token`.
 - The scanner does not run documented commands.
-- Route extraction is limited to supported Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, and Rails conventions.
+- Route extraction is limited to supported Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, Rails, and Laravel conventions.

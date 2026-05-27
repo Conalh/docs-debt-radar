@@ -125,7 +125,7 @@ describe("scanRepositoryFacts", () => {
     );
   });
 
-  it("extracts Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, and Rails route facts", async () => {
+  it("extracts Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, Rails, and Laravel route facts", async () => {
     const nextResult = await scanRepositoryFacts({ root: fixturePath("nextjs-route-drift") });
     const fastApiResult = await scanRepositoryFacts({ root: fixturePath("python-fastapi-drift") });
     const flaskResult = await scanRepositoryFacts({ root: fixturePath("python-flask-drift") });
@@ -135,6 +135,7 @@ describe("scanRepositoryFacts", () => {
     const honoResult = await scanRepositoryFacts({ root: fixturePath("hono-route-drift") });
     const koaResult = await scanRepositoryFacts({ root: fixturePath("koa-route-drift") });
     const railsResult = await scanRepositoryFacts({ root: fixturePath("rails-route-drift") });
+    const laravelResult = await scanRepositoryFacts({ root: fixturePath("laravel-route-drift") });
 
     expect(
       nextResult.facts.map((fact) => ({
@@ -389,6 +390,33 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "config/routes.rb",
           lineNumber: 5,
           metadataJson: { framework: "rails", method: "post" }
+        }
+      ])
+    );
+
+    expect(
+      laravelResult.facts.map((fact) => ({
+        kind: fact.kind,
+        value: fact.value,
+        sourcePath: fact.sourcePath,
+        lineNumber: fact.lineNumber,
+        metadataJson: fact.metadataJson
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          kind: "route_exists",
+          value: "/health",
+          sourcePath: "routes/web.php",
+          lineNumber: 5,
+          metadataJson: { framework: "laravel", method: "get" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users",
+          sourcePath: "routes/web.php",
+          lineNumber: 8,
+          metadataJson: { framework: "laravel", method: "post" }
         }
       ])
     );

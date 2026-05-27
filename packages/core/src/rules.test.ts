@@ -44,7 +44,8 @@ const fixtureIds = [
   "nestjs-route-drift",
   "hono-route-drift",
   "koa-route-drift",
-  "rails-route-drift"
+  "rails-route-drift",
+  "laravel-route-drift"
 ];
 
 const tempDirs: string[] = [];

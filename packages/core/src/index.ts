@@ -330,7 +330,17 @@ interface MarkdownNode {
 const severityOrder: Severity[] = ["high", "medium", "low", "info"];
 const shellLanguages = new Set(["bash", "shell", "sh", "zsh", "console"]);
 const ignoredDirectories = new Set([".git", "node_modules", "dist", "coverage"]);
-const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py", ".rb"]);
+const sourceExtensions = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".py",
+  ".rb",
+  ".php"
+]);
 
 export const V1_RULES: readonly RuleMetadata[] = [
   {
@@ -1073,6 +1083,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isHono = routeFacts.some((fact) => fact.metadataJson.framework === "hono");
   const isKoa = routeFacts.some((fact) => fact.metadataJson.framework === "koa");
   const isRails = routeFacts.some((fact) => fact.metadataJson.framework === "rails");
+  const isLaravel = routeFacts.some((fact) => fact.metadataJson.framework === "laravel");
   const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
@@ -1092,13 +1103,22 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isHono,
           isKoa,
           isRails,
+          isLaravel,
           isNextJs
         }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isFlask || isDjango || isExpress || isNestJs || isHono || isKoa || isRails
+          isFastApi ||
+            isFlask ||
+            isDjango ||
+            isExpress ||
+            isNestJs ||
+            isHono ||
+            isKoa ||
+            isRails ||
+            isLaravel
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1116,6 +1136,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isHono,
           isKoa,
           isRails,
+          isLaravel,
           isNextJs
         }),
         falsePositiveNote:
@@ -1133,6 +1154,7 @@ function routeMissingTitle(input: {
   isHono: boolean;
   isKoa: boolean;
   isRails: boolean;
+  isLaravel: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1167,6 +1189,10 @@ function routeMissingTitle(input: {
     return "Documented Rails route was not found";
   }
 
+  if (input.isLaravel) {
+    return "Documented Laravel route was not found";
+  }
+
   if (input.isNextJs) {
     return "Documented Next.js route was not found";
   }
@@ -1184,6 +1210,7 @@ function routeMissingSuggestion(input: {
   isHono: boolean;
   isKoa: boolean;
   isRails: boolean;
+  isLaravel: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1216,6 +1243,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isRails) {
     return "Update the route mention or add the missing Rails route.";
+  }
+
+  if (input.isLaravel) {
+    return "Update the route mention or add the missing Laravel route.";
   }
 
   if (input.isNextJs) {
@@ -1950,6 +1981,26 @@ async function extractRouteFacts(
       continue;
     }
 
+    if (extname(file.path).toLowerCase() === ".php") {
+      const text = await readTextForFact(root, file.path, warnings);
+      if (text === undefined || !looksLikeLaravelRoutes(text)) {
+        continue;
+      }
+
+      for (const route of extractLaravelRoutes(text)) {
+        facts.push(
+          createCodeFact({
+            kind: "route_exists",
+            value: route.path,
+            sourcePath: file.path,
+            lineNumber: route.lineNumber,
+            metadata: { framework: "laravel", method: route.method }
+          })
+        );
+      }
+      continue;
+    }
+
     if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(extname(file.path).toLowerCase())) {
       const text = await readTextForFact(root, file.path, warnings);
       if (text === undefined) {
@@ -2447,6 +2498,45 @@ function extractRailsRoutes(
       routes.push({
         method: routeMatch[1],
         path: combineRouteParts(scopePrefixes.join("/"), routeMatch[2]),
+        lineNumber: lineIndex + 1
+      });
+    }
+  }
+
+  return routes;
+}
+
+function looksLikeLaravelRoutes(text: string): boolean {
+  return /\bIlluminate\\Support\\Facades\\Route\b|\bRoute::(?:get|post|put|patch|delete|options|any|match|prefix)\(/.test(
+    text
+  );
+}
+
+function extractLaravelRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const prefixScopes: string[] = [];
+  const prefixPattern = /\bRoute::prefix\(\s*["']([^"']+)["']\s*\)->group\(/;
+  const routePattern = /\bRoute::(get|post|put|patch|delete|options|any)\(\s*["']([^"']+)["']/;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    const prefixMatch = prefixPattern.exec(line);
+    if (prefixMatch?.[1]) {
+      prefixScopes.push(prefixMatch[1]);
+      continue;
+    }
+
+    if (/^\s*\}\);/.test(line) && prefixScopes.length > 0) {
+      prefixScopes.pop();
+      continue;
+    }
+
+    const routeMatch = routePattern.exec(line);
+    if (routeMatch?.[1] && routeMatch[2]) {
+      routes.push({
+        method: routeMatch[1],
+        path: combineRouteParts(prefixScopes.join("/"), routeMatch[2]),
         lineNumber: lineIndex + 1
       });
     }

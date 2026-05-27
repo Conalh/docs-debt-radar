@@ -66,6 +66,7 @@ const requiredProjectTypes = [
   "hono",
   "koa",
   "rails",
+  "laravel",
   "github-actions",
   "docs-assets-env"
 ];
@@ -94,6 +95,7 @@ describe("fixture contract", () => {
       "github-actions-drift",
       "hono-route-drift",
       "koa-route-drift",
+      "laravel-route-drift",
       "nestjs-route-drift",
       "nextjs-route-drift",
       "python-django-drift",

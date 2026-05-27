@@ -108,6 +108,14 @@
       "expectedReport": "expected-report.json",
       "coversFailingRules": ["stale-route-mention"],
       "coversPassingRules": ["stale-route-mention"]
+    },
+    {
+      "id": "laravel-route-drift",
+      "description": "A minimal Laravel app with documented existing and stale routes.",
+      "projectTypes": ["laravel"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
     }
   ]
 }

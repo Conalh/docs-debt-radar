@@ -33,11 +33,20 @@ try {
   );
 
   run("npm", ["install", "--ignore-scripts"], { cwd: tempRoot });
-  const smoke = run(
-    "npm",
-    ["exec", "--", "docs-debt-radar", "scan", fixturePath, "--format", "json"],
-    { cwd: tempRoot, silent: true }
-  );
+
+  // Invoke the installed CLI entry directly with node rather than via
+  // `npm exec`. On Linux CI, `npm exec` resolved the bin but produced
+  // empty stdout (exit 0), so JSON.parse threw "Unexpected end of JSON
+  // input". Running the dist entry is deterministic across platforms.
+  const cliEntry = resolve(tempRoot, "node_modules", "@docs-debt-radar", "cli", "dist", "index.js");
+  const smoke = run(process.execPath, [cliEntry, "scan", fixturePath, "--format", "json"], {
+    cwd: tempRoot,
+    silent: true
+  });
+
+  if (!smoke.stdout.trim()) {
+    throw new Error("Packed CLI smoke produced no stdout to parse as JSON");
+  }
   const report = JSON.parse(smoke.stdout);
 
   if (report.summaryJson.totalFindings !== 2) {

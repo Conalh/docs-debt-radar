@@ -1069,6 +1069,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isFlask = routeFacts.some((fact) => fact.metadataJson.framework === "flask");
   const isDjango = routeFacts.some((fact) => fact.metadataJson.framework === "django");
   const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
+  const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
     .filter((claim) => claim.kind === "route")
@@ -1078,7 +1079,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
       return createFinding({
         ruleId: "stale-route-mention",
         severity: "medium",
-        title: routeMissingTitle({ isFastApi, isFlask, isDjango, isExpress }),
+        title: routeMissingTitle({ isFastApi, isFlask, isDjango, isExpress, isNextJs }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
@@ -1096,7 +1097,8 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isFastApi,
           isFlask,
           isDjango,
-          isExpress
+          isExpress,
+          isNextJs
         }),
         falsePositiveNote:
           "The route may be created dynamically or by middleware outside supported conventions."
@@ -1109,6 +1111,7 @@ function routeMissingTitle(input: {
   isFlask: boolean;
   isDjango: boolean;
   isExpress: boolean;
+  isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
     return "Documented FastAPI route was not found";
@@ -1126,7 +1129,11 @@ function routeMissingTitle(input: {
     return "Documented Express route was not found";
   }
 
-  return "Documented route was not found in the app router";
+  if (input.isNextJs) {
+    return "Documented Next.js route was not found";
+  }
+
+  return "Documented route was not found";
 }
 
 function routeMissingSuggestion(input: {
@@ -1135,6 +1142,7 @@ function routeMissingSuggestion(input: {
   isFlask: boolean;
   isDjango: boolean;
   isExpress: boolean;
+  isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
     return "Update the API docs or add the missing FastAPI route.";
@@ -1152,7 +1160,11 @@ function routeMissingSuggestion(input: {
     return "Update the route mention or add the missing Express route.";
   }
 
-  return `Update the route mention or add an app${input.route}/page.tsx route.`;
+  if (input.isNextJs) {
+    return "Update the route mention or add a matching Next.js App Router or Pages Router route.";
+  }
+
+  return `Update the route mention or add the missing route.`;
 }
 
 function findBrokenMarkdownAnchors(
@@ -1793,6 +1805,25 @@ async function extractRouteFacts(
       continue;
     }
 
+    if (
+      /^pages\/.+\.(?:tsx|ts|jsx|js)$/.test(normalizedPath) &&
+      !isNextPagesSpecialFile(normalizedPath)
+    ) {
+      facts.push(
+        createCodeFact({
+          kind: "route_exists",
+          value: nextRouteFromPagesPath(normalizedPath),
+          sourcePath: file.path,
+          lineNumber: 1,
+          metadata: {
+            framework: "nextjs",
+            routeType: normalizedPath.startsWith("pages/api/") ? "api" : "page"
+          }
+        })
+      );
+      continue;
+    }
+
     if (extname(file.path).toLowerCase() === ".py") {
       const text = await readTextForFact(root, file.path, warnings);
       if (text === undefined) {
@@ -2083,6 +2114,20 @@ function nextRouteFromAppPath(path: string, terminalFile: "page" | "route"): str
     .filter((segment) => !segment.startsWith("(") && !segment.startsWith("@"));
 
   return `/${routeSegments.join("/")}`.replace(/\/$/, "") || "/";
+}
+
+function nextRouteFromPagesPath(path: string): string {
+  const withoutExtension = path.replace(/\.(?:tsx|ts|jsx|js)$/, "");
+  const routeSegments = withoutExtension
+    .split("/")
+    .slice(1)
+    .filter((segment) => segment !== "index");
+
+  return `/${routeSegments.join("/")}`.replace(/\/$/, "") || "/";
+}
+
+function isNextPagesSpecialFile(path: string): boolean {
+  return /^pages\/_(?:app|document|error)\.(?:tsx|ts|jsx|js)$/.test(path);
 }
 
 function findLineNumber(text: string, needle: string): number {

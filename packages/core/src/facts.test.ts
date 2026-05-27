@@ -155,6 +155,20 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "app/api/health/route.ts",
           lineNumber: 1,
           metadataJson: { framework: "nextjs", routeType: "api" }
+        },
+        {
+          kind: "route_exists",
+          value: "/profile",
+          sourcePath: "pages/profile.tsx",
+          lineNumber: 1,
+          metadataJson: { framework: "nextjs", routeType: "page" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/status",
+          sourcePath: "pages/api/status.ts",
+          lineNumber: 1,
+          metadataJson: { framework: "nextjs", routeType: "api" }
         }
       ])
     );

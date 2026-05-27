@@ -14,13 +14,13 @@
       "ruleId": "stale-route-mention",
       "severity": "medium",
       "documentPath": "README.md",
-      "documentLine": 4,
-      "title": "Documented route was not found in the app router",
+      "documentLine": 5,
+      "title": "Documented Next.js route was not found",
       "evidence": {
         "claim": "README.md tells users to open `/settings`.",
-        "currentFact": "The fixture defines `/dashboard` and `/api/health`, but not `/settings`."
+        "currentFact": "The fixture defines `/dashboard`, `/profile`, `/api/health` and `/api/status`, but not `/settings`."
       },
-      "suggestedAction": "Update the route mention or add an app/settings/page.tsx route."
+      "suggestedAction": "Update the route mention or add a matching Next.js App Router or Pages Router route."
     }
   ]
 }

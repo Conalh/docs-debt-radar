@@ -10,7 +10,7 @@ Goal 4 adds the scanner side that reads the current repository state and emits f
 - `config_key` for Markdown heading anchors.
 - `package_script` for scripts in `package.json` files.
 - `env_var_declared` for `.env.example` entries and source references.
-- `route_exists` for Next.js App Router routes and FastAPI decorators.
+- `route_exists` for Next.js App Router routes, FastAPI decorators, and literal Express route calls.
 - `workflow_exists` for GitHub Actions workflow names.
 - `command_surface` for GitHub Actions `run:` commands.
 
@@ -22,7 +22,7 @@ The extractor intentionally stays local and conservative:
 - It does not import application code.
 - It ignores `.git`, `node_modules`, `dist`, and `coverage`.
 - It scans common source extensions for env references.
-- It uses simple file conventions for Next.js and decorator patterns for FastAPI.
+- It uses simple file conventions for Next.js, decorator patterns for FastAPI, and literal `app.get("/path")` / `router.post("/path")` patterns for Express.
 
 ## CLI Smoke
 

@@ -1,0 +1,9 @@
+{
+  "name": "express-route-drift",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0"
+  }
+}

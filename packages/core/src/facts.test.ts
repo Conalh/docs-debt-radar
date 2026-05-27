@@ -125,9 +125,10 @@ describe("scanRepositoryFacts", () => {
     );
   });
 
-  it("extracts Next.js and FastAPI route facts", async () => {
+  it("extracts Next.js, FastAPI, and Express route facts", async () => {
     const nextResult = await scanRepositoryFacts({ root: fixturePath("nextjs-route-drift") });
     const fastApiResult = await scanRepositoryFacts({ root: fixturePath("python-fastapi-drift") });
+    const expressResult = await scanRepositoryFacts({ root: fixturePath("express-route-drift") });
 
     expect(
       nextResult.facts.map((fact) => ({
@@ -172,6 +173,33 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "app/main.py",
           lineNumber: 9,
           metadataJson: { framework: "fastapi", method: "get" }
+        }
+      ])
+    );
+
+    expect(
+      expressResult.facts.map((fact) => ({
+        kind: fact.kind,
+        value: fact.value,
+        sourcePath: fact.sourcePath,
+        lineNumber: fact.lineNumber,
+        metadataJson: fact.metadataJson
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          kind: "route_exists",
+          value: "/health",
+          sourcePath: "src/server.js",
+          lineNumber: 5,
+          metadataJson: { framework: "express", method: "get" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users",
+          sourcePath: "src/server.js",
+          lineNumber: 9,
+          metadataJson: { framework: "express", method: "post" }
         }
       ])
     );

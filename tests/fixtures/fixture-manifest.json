@@ -52,6 +52,14 @@
         "env-var-not-documented",
         "stale-route-mention"
       ]
+    },
+    {
+      "id": "express-route-drift",
+      "description": "A minimal Express app with documented existing and stale routes.",
+      "projectTypes": ["express"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
     }
   ]
 }

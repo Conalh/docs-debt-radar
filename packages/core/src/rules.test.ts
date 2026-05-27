@@ -35,7 +35,8 @@ const fixtureIds = [
   "docs-assets-env-drift",
   "github-actions-drift",
   "nextjs-route-drift",
-  "python-fastapi-drift"
+  "python-fastapi-drift",
+  "express-route-drift"
 ];
 
 describe("scanDocsDebt", () => {

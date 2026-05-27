@@ -339,7 +339,7 @@ export const V1_RULES: readonly RuleMetadata[] = [
     id: "stale-route-mention",
     title: "Documented route was not found",
     severity: "medium",
-    description: "Flags documented routes not found in supported Next.js or FastAPI conventions.",
+    description: "Flags documented routes not found in supported framework conventions.",
     falsePositiveNote:
       "The route may be created dynamically or by middleware outside supported conventions."
   },
@@ -910,6 +910,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const routeValues = new Set(routeFacts.map((fact) => fact.value));
   const routeList = formatList([...routeValues].sort(compareRouteDisplayValues));
   const isFastApi = routeFacts.some((fact) => fact.metadataJson.framework === "fastapi");
+  const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
 
   return claims
     .filter((claim) => claim.kind === "route")
@@ -919,14 +920,12 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
       return createFinding({
         ruleId: "stale-route-mention",
         severity: "medium",
-        title: isFastApi
-          ? "Documented FastAPI route was not found"
-          : "Documented route was not found in the app router",
+        title: routeMissingTitle({ isFastApi, isExpress }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi
+          isFastApi || isExpress
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -934,13 +933,43 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
         documentLine: claim.lineNumber,
         claimId: claim.id,
         relatedFactIds: routeFacts.map((fact) => fact.id),
-        suggestedEdit: isFastApi
-          ? "Update the API docs or add the missing FastAPI route."
-          : `Update the route mention or add an app${claim.normalizedValue}/page.tsx route.`,
+        suggestedEdit: routeMissingSuggestion({
+          route: claim.normalizedValue,
+          isFastApi,
+          isExpress
+        }),
         falsePositiveNote:
           "The route may be created dynamically or by middleware outside supported conventions."
       });
     });
+}
+
+function routeMissingTitle(input: { isFastApi: boolean; isExpress: boolean }): string {
+  if (input.isFastApi) {
+    return "Documented FastAPI route was not found";
+  }
+
+  if (input.isExpress) {
+    return "Documented Express route was not found";
+  }
+
+  return "Documented route was not found in the app router";
+}
+
+function routeMissingSuggestion(input: {
+  route: string;
+  isFastApi: boolean;
+  isExpress: boolean;
+}): string {
+  if (input.isFastApi) {
+    return "Update the API docs or add the missing FastAPI route.";
+  }
+
+  if (input.isExpress) {
+    return "Update the route mention or add the missing Express route.";
+  }
+
+  return `Update the route mention or add an app${input.route}/page.tsx route.`;
 }
 
 function findBrokenMarkdownAnchors(
@@ -1498,6 +1527,26 @@ async function extractRouteFacts(
           })
         );
       }
+      continue;
+    }
+
+    if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(extname(file.path).toLowerCase())) {
+      const text = await readTextForFact(root, file.path, warnings);
+      if (text === undefined || !looksLikeExpressSource(text)) {
+        continue;
+      }
+
+      for (const route of extractExpressRoutes(text)) {
+        facts.push(
+          createCodeFact({
+            kind: "route_exists",
+            value: route.path,
+            sourcePath: file.path,
+            lineNumber: route.lineNumber,
+            metadata: { framework: "express", method: route.method }
+          })
+        );
+      }
     }
   }
 
@@ -1622,6 +1671,30 @@ function extractFastApiRoutes(
 ): Array<{ method: string; path: string; lineNumber: number }> {
   const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
   const routePattern = /@app\.(get|post|put|patch|delete|options|head)\(\s*["']([^"']+)["']/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    routePattern.lastIndex = 0;
+    const match = routePattern.exec(line);
+    if (match?.[1] && match[2]) {
+      routes.push({ method: match[1], path: match[2], lineNumber: lineIndex + 1 });
+    }
+  }
+
+  return routes;
+}
+
+function looksLikeExpressSource(text: string): boolean {
+  return /\bfrom\s+["']express["']|\brequire\(\s*["']express["']\s*\)|\bexpress\.Router\(/.test(
+    text
+  );
+}
+
+function extractExpressRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const routePattern =
+    /\b(?:app|router)\.(get|post|put|patch|delete|options|head|all|use)\(\s*["'`]([^"'`]+)["'`]/g;
 
   for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
     routePattern.lastIndex = 0;

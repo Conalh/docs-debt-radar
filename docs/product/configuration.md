@@ -60,4 +60,4 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 - `changed-only` requires the scanned path to be inside a Git repository.
 - External URL checking is out of V1 scope.
 - The scanner does not run documented commands.
-- Route extraction is limited to supported Next.js and FastAPI conventions.
+- Route extraction is limited to supported Next.js, FastAPI, and Express conventions.

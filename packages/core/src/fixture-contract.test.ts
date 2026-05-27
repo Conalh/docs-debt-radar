@@ -55,7 +55,14 @@ const v1Rules = [
   "workflow-references-missing-script"
 ];
 
-const requiredProjectTypes = ["node", "nextjs", "fastapi", "github-actions", "docs-assets-env"];
+const requiredProjectTypes = [
+  "node",
+  "nextjs",
+  "fastapi",
+  "express",
+  "github-actions",
+  "docs-assets-env"
+];
 
 function readJson<T>(path: string): T {
   return JSON.parse(readFileSync(path, "utf8")) as T;
@@ -77,6 +84,7 @@ describe("fixture contract", () => {
     expect(manifest.fixtures.map((fixture) => fixture.id).sort()).toEqual([
       "basic-node-drift",
       "docs-assets-env-drift",
+      "express-route-drift",
       "github-actions-drift",
       "nextjs-route-drift",
       "python-fastapi-drift"

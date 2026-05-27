@@ -24,3 +24,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added release-readiness packaging metadata, package surface audits, packed CLI smoke tests, compatibility notes, and an MIT license.
 - Added SARIF 2.1.0 output for code-scanning compatible docs debt reports.
 - Added `--changed-only` scanning for changed Markdown docs while preserving full-repository fact extraction.
+- Added Express route extraction for literal app/router route calls and stale route reporting.

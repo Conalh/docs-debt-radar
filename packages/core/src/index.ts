@@ -129,6 +129,19 @@ export interface Finding {
   falsePositiveNote: string;
 }
 
+export type SuggestedFixConfidence = "high" | "medium" | "low";
+
+export interface SuggestedFix {
+  id: string;
+  findingId: string;
+  ruleId: string;
+  documentPath: string;
+  documentLine: number;
+  confidence: SuggestedFixConfidence;
+  description: string;
+  unifiedDiff: string;
+}
+
 export interface ScannerWarning {
   id: string;
   kind: ScannerWarningKind;
@@ -170,6 +183,7 @@ export interface ScanReport {
   claimsJson: Claim[];
   factsJson: CodeFact[];
   findingsJson: Finding[];
+  suggestedFixesJson: SuggestedFix[];
   suppressionsJson: AppliedSuppression[];
   warningsJson: ScannerWarning[];
   markdown: string;
@@ -222,6 +236,7 @@ export interface CreateScanReportInput {
   claims: Claim[];
   facts: CodeFact[];
   findings: Finding[];
+  suggestedFixes?: SuggestedFix[];
   suppressions?: AppliedSuppression[];
   warnings: ScannerWarning[];
   markdown: string;
@@ -521,6 +536,7 @@ export function summarizeFindings(
 
 export function createScanReport(input: CreateScanReportInput): ScanReport {
   const findings = [...input.findings].sort(compareFindings);
+  const suggestedFixes = [...(input.suggestedFixes ?? [])].sort(compareSuggestedFixes);
   const suppressions = [...(input.suppressions ?? [])].sort(compareSuppressions);
 
   return {
@@ -544,6 +560,7 @@ export function createScanReport(input: CreateScanReportInput): ScanReport {
       ...finding,
       relatedFactIds: [...finding.relatedFactIds]
     })),
+    suggestedFixesJson: suggestedFixes.map((suggestedFix) => ({ ...suggestedFix })),
     suppressionsJson: suppressions.map((suppression) => ({ ...suppression })),
     warningsJson: input.warnings.map((warning) => ({ ...warning })),
     markdown: input.markdown
@@ -575,6 +592,7 @@ export function createEmptyScanReport(input: {
     claims: [],
     facts: [],
     findings: [],
+    suggestedFixes: [],
     suppressions: [],
     warnings: [],
     markdown: ""
@@ -729,6 +747,7 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
     claims: claimsResult.claims,
     facts: factsResult.facts,
     findings: suppressionResult.findings,
+    suggestedFixes: generateSuggestedFixes(claimsResult.documents, suppressionResult.findings),
     suppressions: suppressionResult.suppressions,
     warnings,
     markdown: renderMarkdownFindings(suppressionResult.findings, suppressionResult.suppressions)
@@ -770,6 +789,14 @@ function normalizeChangedMarkdownPaths(paths: readonly string[]): string[] {
 function compareFindings(left: Finding, right: Finding): number {
   return (
     severityOrder.indexOf(left.severity) - severityOrder.indexOf(right.severity) ||
+    left.documentPath.localeCompare(right.documentPath) ||
+    left.documentLine - right.documentLine ||
+    left.ruleId.localeCompare(right.ruleId)
+  );
+}
+
+function compareSuggestedFixes(left: SuggestedFix, right: SuggestedFix): number {
+  return (
     left.documentPath.localeCompare(right.documentPath) ||
     left.documentLine - right.documentLine ||
     left.ruleId.localeCompare(right.ruleId)
@@ -1386,6 +1413,79 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function stripUtf8Bom(text: string): string {
   return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+function generateSuggestedFixes(
+  documents: readonly DocumentFile[],
+  findings: readonly Finding[]
+): SuggestedFix[] {
+  const documentsByPath = new Map(documents.map((document) => [document.path, document]));
+  const fixes: SuggestedFix[] = [];
+
+  for (const finding of findings) {
+    const document = documentsByPath.get(finding.documentPath);
+    const description = suggestedFixDescription(finding.ruleId);
+    if (!document || !description) {
+      continue;
+    }
+
+    const lineText = document.text.split(/\r?\n/)[finding.documentLine - 1];
+    if (!lineText?.trim()) {
+      continue;
+    }
+
+    const unifiedDiff = renderRemoveLineDiff(finding.documentPath, finding.documentLine, lineText);
+    fixes.push({
+      id: createStableId("fix", [finding.id, unifiedDiff]),
+      findingId: finding.id,
+      ruleId: finding.ruleId,
+      documentPath: finding.documentPath,
+      documentLine: finding.documentLine,
+      confidence: "low",
+      description,
+      unifiedDiff
+    });
+  }
+
+  return fixes.sort(compareSuggestedFixes);
+}
+
+function suggestedFixDescription(ruleId: string): string | undefined {
+  if (ruleId === "missing-package-script") {
+    return "Remove the stale documentation line or replace it with a current command.";
+  }
+
+  if (
+    [
+      "missing-referenced-file",
+      "broken-markdown-anchor",
+      "missing-screenshot",
+      "external-link-unreachable"
+    ].includes(ruleId)
+  ) {
+    return "Remove the stale documentation line or replace it with a current reference.";
+  }
+
+  if (ruleId === "stale-route-mention") {
+    return "Remove the stale documentation line or replace it with a current route.";
+  }
+
+  if (ruleId === "documented-env-var-not-used") {
+    return "Remove the stale documentation line or replace it with a current env var.";
+  }
+
+  return undefined;
+}
+
+function renderRemoveLineDiff(path: string, lineNumber: number, lineText: string): string {
+  return [
+    `diff --git a/${path} b/${path}`,
+    `--- a/${path}`,
+    `+++ b/${path}`,
+    `@@ -${lineNumber},1 +${lineNumber},0 @@`,
+    `-${lineText}`,
+    ""
+  ].join("\n");
 }
 
 function renderMarkdownFindings(

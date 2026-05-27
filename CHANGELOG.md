@@ -26,3 +26,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added `--changed-only` scanning for changed Markdown docs while preserving full-repository fact extraction.
 - Added Express route extraction for literal app/router route calls and stale route reporting.
 - Added opt-in external link checking for Markdown links in the CLI and GitHub Action.
+- Added structured suggested fixes and CLI `--format patch` output for patchable documentation findings.

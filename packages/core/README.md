@@ -11,7 +11,7 @@ npm install @docs-debt-radar/core
 ## Runtime
 
 - Node.js 22 or newer.
-- No network access is required while scanning a local repository.
+- No network access is required for default local scans. External link checks are opt-in.
 
 ## API
 

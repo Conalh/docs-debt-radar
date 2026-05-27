@@ -9,8 +9,9 @@ The core evidence model is the shared contract between claim extraction, fact ex
 - `Claim`: A checkable documentation claim with document path, line number, kind, raw text, normalized value, context, and confidence.
 - `CodeFact`: A repository fact with kind, value, source path, line number, and structured metadata.
 - `Finding`: A rule result that connects one claim to zero or more related facts and includes severity, suggested edit, and false-positive note.
+- `SuggestedFix`: An advisory unified diff for a patchable single-line documentation finding.
 - `ScannerWarning`: A non-finding scanner issue such as skipped files, unreadable files, unsupported frameworks, or isolated rule errors.
-- `ScanReport`: Serializable report containing scan metadata, config, summary, documents, claims, facts, findings, warnings, and Markdown output.
+- `ScanReport`: Serializable report containing scan metadata, config, summary, documents, claims, facts, findings, suggested fixes, warnings, and Markdown output.
 
 ## Stable IDs
 
@@ -19,6 +20,7 @@ IDs are deterministic and generated from semantic identity fields:
 - Claims: document path, line number, kind, normalized value.
 - Facts: kind, value, source path, line number.
 - Findings: rule ID, claim ID, related fact IDs.
+- Suggested fixes: finding ID and rendered diff.
 - Warnings: kind, path, line number, message.
 - Reports: repo root, scan timestamp, scanner version.
 
@@ -39,6 +41,10 @@ Claim confidence describes extraction confidence, not rule severity:
 ## Summaries
 
 `ScanSummary` is derived from report contents. It counts findings by severity, warnings, scanned documents, claims, and facts. Summary values should not be hand-maintained by callers.
+
+## Suggested Fixes
+
+Patch suggestions are separate from findings. A finding can be real without having a safe patch, and generated patches are advisory rather than automatically applied.
 
 ## Warning Policy
 

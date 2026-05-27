@@ -109,6 +109,7 @@ describe("evidence model", () => {
       claimsJson: [claim],
       factsJson: [fact],
       findingsJson: [finding],
+      suggestedFixesJson: [],
       suppressionsJson: [],
       warningsJson: [warning],
       markdown: "# Docs Debt Report\n\n1 high finding."

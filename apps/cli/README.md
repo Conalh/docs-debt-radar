@@ -12,6 +12,7 @@ npm install -D @docs-debt-radar/cli
 
 ```bash
 npx docs-debt-radar scan . --format markdown
+npx docs-debt-radar scan . --format patch
 npx docs-debt-radar list-rules
 npx docs-debt-radar explain missing-package-script
 ```

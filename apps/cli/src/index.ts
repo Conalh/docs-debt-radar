@@ -28,7 +28,7 @@ export function createCliHelp(): string {
     "  docs-debt-radar scan <path> [options]",
     "",
     "Options:",
-    "  --format <text|markdown|json|sarif> Output format",
+    "  --format <text|markdown|json|sarif|patch> Output format",
     "  --claims                            Print extracted Markdown claims",
     "  --facts                             Print extracted repository facts",
     "  --docs <path...>                    Restrict Markdown docs scanned for claims",
@@ -188,6 +188,14 @@ function renderResult(
     return new Error("Markdown output is only supported for full scan reports.");
   }
 
+  if (format === "patch") {
+    if ("findingsJson" in result) {
+      return renderPatchReport(result);
+    }
+
+    return new Error("Patch output is only supported for full scan reports.");
+  }
+
   if (format !== "text") {
     return new Error(`Unsupported output format: ${format}`);
   }
@@ -215,6 +223,14 @@ function renderResult(
     )
     .join("\n")
     .concat(result.claims.length > 0 ? "\n" : "");
+}
+
+function renderPatchReport(report: ScanReport): string {
+  if (report.suggestedFixesJson.length === 0) {
+    return "No suggested patch fixes.\n";
+  }
+
+  return `${report.suggestedFixesJson.map((fix) => fix.unifiedDiff.trimEnd()).join("\n\n")}\n`;
 }
 
 interface SarifLog {

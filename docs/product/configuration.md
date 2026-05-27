@@ -10,6 +10,7 @@ Docs Debt Radar is intentionally small in V1. Most behavior is controlled throug
 | `--format markdown`      | Human-readable Markdown report.                                  |
 | `--format json`          | Full structured scan report.                                     |
 | `--format sarif`         | SARIF 2.1.0 report for code-scanning compatible consumers.       |
+| `--format patch`         | Unified-diff suggestions for patchable documentation findings.   |
 | `--write-report <path>`  | Write the selected output format to disk.                        |
 | `--fail-on <threshold>`  | Return exit code `1` when a visible finding meets the threshold. |
 | `--docs <path...>`       | Restrict Markdown docs scanned for claims.                       |
@@ -61,5 +62,6 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 
 - `changed-only` requires the scanned path to be inside a Git repository.
 - External URL checking is disabled by default and only runs with `--check-external-links`.
+- Patch output is advisory and only covers conservative single-line documentation edits.
 - The scanner does not run documented commands.
 - Route extraction is limited to supported Next.js, FastAPI, and Express conventions.

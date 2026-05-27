@@ -111,6 +111,7 @@ documented-env-var-not-used          docs mention an env var source does not rea
 stale-route-mention                  docs mention a route not found by supported extractors
 broken-markdown-anchor               docs link to a missing heading anchor
 missing-screenshot                   docs reference an image path that is absent
+external-link-unreachable            opted-in external link check returns a failure
 workflow-references-missing-script   workflow runs a package script that is absent
 ```
 
@@ -130,6 +131,7 @@ docs-debt-radar scan . --format text
 docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
+docs-debt-radar scan . --format patch
 docs-debt-radar scan . --docs README.md docs/setup.md
 docs-debt-radar scan . --changed-only
 docs-debt-radar scan . --check-external-links
@@ -143,6 +145,7 @@ Exit codes:
 - `2`: invalid command, option, output format, changed-file lookup, or runtime/config error.
 
 Use `--format sarif` when you want a code-scanning compatible report with finding locations, rule metadata, and suggested edits.
+Use `--format patch` when you want conservative unified-diff suggestions for patchable single-line documentation findings. These patches are suggestions only; the scanner does not modify files.
 Use `--changed-only` to scan only Markdown docs reported by `git status`, while still comparing them against facts from the whole repository.
 Use `--check-external-links` when you explicitly want network checks for external Markdown links.
 

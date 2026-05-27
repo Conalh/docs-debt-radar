@@ -131,6 +131,48 @@ describe("scanDocsDebt", () => {
       })
     ]);
   });
+
+  it("creates patch suggestions for stale single-line documentation claims", async () => {
+    const fixtureRoot = join(process.cwd(), "tests/fixtures/basic-node-drift");
+    const report = await scanDocsDebt({
+      root: fixtureRoot,
+      scannerVersion: "0.0.0-test",
+      scannedAt: "2026-05-27T00:00:00.000Z"
+    });
+
+    expect(report.suggestedFixesJson).toEqual([
+      expect.objectContaining({
+        ruleId: "missing-package-script",
+        documentPath: "README.md",
+        documentLine: 7,
+        confidence: "low",
+        description: "Remove the stale documentation line or replace it with a current command.",
+        unifiedDiff: [
+          "diff --git a/README.md b/README.md",
+          "--- a/README.md",
+          "+++ b/README.md",
+          "@@ -7,1 +7,0 @@",
+          "-Run `npm run test:e2e` before opening a pull request.",
+          ""
+        ].join("\n")
+      }),
+      expect.objectContaining({
+        ruleId: "missing-referenced-file",
+        documentPath: "README.md",
+        documentLine: 10,
+        confidence: "low",
+        description: "Remove the stale documentation line or replace it with a current reference.",
+        unifiedDiff: [
+          "diff --git a/README.md b/README.md",
+          "--- a/README.md",
+          "+++ b/README.md",
+          "@@ -10,1 +10,0 @@",
+          "-See [missing CLI reference](docs/cli.md).",
+          ""
+        ].join("\n")
+      })
+    ]);
+  });
 });
 
 function compareExpectedFindings(

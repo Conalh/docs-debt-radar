@@ -19,7 +19,7 @@ afterEach(async () => {
 describe("createCliHelp", () => {
   it("documents the initial scan command surface", () => {
     expect(createCliHelp()).toContain("docs-debt-radar scan <path>");
-    expect(createCliHelp()).toContain("--format <text|markdown|json|sarif>");
+    expect(createCliHelp()).toContain("--format <text|markdown|json|sarif|patch>");
     expect(createCliHelp()).toContain("--check-external-links");
     expect(createCliHelp()).toContain("--fail-on <none|info|low|medium|high>");
   });
@@ -286,6 +286,23 @@ describe("createCliHelp", () => {
         })
       ])
     );
+    expect(result.stderr).toBe("");
+  });
+
+  it("prints suggested patch fixes for patchable documentation findings", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "patch"
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("diff --git a/README.md b/README.md");
+    expect(result.stdout).toContain("@@ -7,1 +7,0 @@");
+    expect(result.stdout).toContain("-Run `npm run test:e2e` before opening a pull request.");
+    expect(result.stdout).toContain("@@ -10,1 +10,0 @@");
+    expect(result.stdout).toContain("-See [missing CLI reference](docs/cli.md).");
     expect(result.stderr).toBe("");
   });
 

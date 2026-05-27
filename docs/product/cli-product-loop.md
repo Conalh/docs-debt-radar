@@ -11,6 +11,7 @@ docs-debt-radar scan . --format text
 docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
+docs-debt-radar scan . --format patch
 docs-debt-radar scan . --changed-only
 docs-debt-radar scan . --check-external-links
 ```
@@ -55,8 +56,19 @@ docs-debt-radar scan . --fail-on high
 - `markdown`: full Markdown report for normal scans.
 - `json`: full structured scan result.
 - `sarif`: SARIF 2.1.0 report for code-scanning tools.
+- `patch`: advisory unified-diff suggestions for patchable single-line doc findings.
 
-Markdown and SARIF output are only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.
+Markdown, SARIF, and patch output are only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.
+
+## Patch Suggestions
+
+Patch output is intentionally conservative:
+
+```bash
+docs-debt-radar scan . --format patch
+```
+
+The scanner emits unified-diff suggestions for findings where removing or replacing a single stale documentation line is a plausible next edit. It does not apply patches automatically, and unpatchable findings still keep their normal `suggestedEdit` text in Markdown, JSON, and SARIF reports.
 
 ## Changed-Only Scans
 

@@ -22,6 +22,10 @@ inputs:
     description: Scan only changed Markdown docs reported by git status.
     required: false
     default: "false"
+  changed-since:
+    description: Scan only Markdown docs changed since a git ref.
+    required: false
+    default: ""
   check-external-links:
     description: Check external Markdown links with network requests.
     required: false
@@ -83,6 +87,7 @@ runs:
         INPUT_REPORT_FORMAT: ${{ inputs.report-format }}
         INPUT_DOCS: ${{ inputs.docs }}
         INPUT_CHANGED_ONLY: ${{ inputs.changed-only }}
+        INPUT_CHANGED_SINCE: ${{ inputs.changed-since }}
         INPUT_CHECK_EXTERNAL_LINKS: ${{ inputs.check-external-links }}
         INPUT_PR_COMMENT: ${{ inputs.pr-comment }}
         INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}

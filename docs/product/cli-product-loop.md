@@ -13,6 +13,7 @@ docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
 docs-debt-radar scan . --format patch
 docs-debt-radar scan . --changed-only
+docs-debt-radar scan . --changed-since origin/main
 docs-debt-radar scan . --check-external-links
 ```
 
@@ -78,6 +79,13 @@ Combine it with `--docs` to limit the changed-doc scan to a known docs surface:
 
 ```bash
 docs-debt-radar scan . --changed-only --docs README.md docs/
+```
+
+Use `--changed-since <ref>` for pull request and monorepo workflows where the changed docs should come from a base ref instead of the working tree:
+
+```bash
+docs-debt-radar scan . --changed-since origin/main
+docs-debt-radar scan . --changed-since origin/main --docs packages/app-a docs/
 ```
 
 ## External Link Checks

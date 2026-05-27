@@ -20,6 +20,7 @@ describe("createCliHelp", () => {
   it("documents the initial scan command surface", () => {
     expect(createCliHelp()).toContain("docs-debt-radar scan <path>");
     expect(createCliHelp()).toContain("--format <text|markdown|json|sarif|patch>");
+    expect(createCliHelp()).toContain("--changed-since <ref>");
     expect(createCliHelp()).toContain("--check-external-links");
     expect(createCliHelp()).toContain("--fail-on <none|info|low|medium|high>");
   });
@@ -190,6 +191,63 @@ describe("createCliHelp", () => {
         })
       ]
     });
+    expect(result.stderr).toBe("");
+  });
+
+  it("restricts scans to nested Markdown docs changed since a git ref", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "docs-debt-radar-monorepo-"));
+    tempDirs.push(tempDir);
+    await mkdir(join(tempDir, "packages/app-a"), { recursive: true });
+    await mkdir(join(tempDir, "packages/app-b"), { recursive: true });
+    await writeFile(
+      join(tempDir, "package.json"),
+      `${JSON.stringify({ scripts: { test: "vitest" } }, null, 2)}\n`,
+      "utf8"
+    );
+    await writeFile(join(tempDir, "packages/app-a/README.md"), "Run `npm run test`.\n", "utf8");
+    await writeFile(
+      join(tempDir, "packages/app-b/README.md"),
+      "Run `npm run missing-b`.\n",
+      "utf8"
+    );
+    runGit(tempDir, ["init"]);
+    runGit(tempDir, ["add", "."]);
+    runGit(tempDir, [
+      "-c",
+      "user.name=Docs Debt Radar",
+      "-c",
+      "user.email=docs-debt-radar@example.test",
+      "commit",
+      "-m",
+      "initial monorepo fixture"
+    ]);
+    await writeFile(
+      join(tempDir, "packages/app-a/README.md"),
+      "Run `npm run missing-a`.\n",
+      "utf8"
+    );
+
+    const result = await runCli(["scan", tempDir, "--format", "json", "--changed-since", "HEAD"]);
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      config: {
+        changedOnly: true,
+        changedSince: "HEAD",
+        docsGlobs: ["packages/app-a/README.md"]
+      },
+      summaryJson: {
+        totalFindings: 1,
+        scannedDocumentCount: 1
+      },
+      findingsJson: [
+        expect.objectContaining({
+          ruleId: "missing-package-script",
+          documentPath: "packages/app-a/README.md"
+        })
+      ]
+    });
+    expect(result.stdout).not.toContain("missing-b");
     expect(result.stderr).toBe("");
   });
 

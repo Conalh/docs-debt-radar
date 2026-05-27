@@ -28,3 +28,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added opt-in external link checking for Markdown links in the CLI and GitHub Action.
 - Added structured suggested fixes and CLI `--format patch` output for patchable documentation findings.
 - Added opt-in GitHub Action pull request summary comments.
+- Added `--changed-since` base-ref scanning for pull request and monorepo workflows.

@@ -33,6 +33,7 @@ export function createCliHelp(): string {
     "  --facts                             Print extracted repository facts",
     "  --docs <path...>                    Restrict Markdown docs scanned for claims",
     "  --changed-only                      Scan only Markdown docs changed in git status",
+    "  --changed-since <ref>               Scan Markdown docs changed since a git ref",
     "  --check-external-links              Check external Markdown links with network requests",
     "  --fail-on <none|info|low|medium|high> Exit with code 1 at or above this severity",
     "  --write-report <path>               Write the report to a file",
@@ -113,11 +114,17 @@ export async function runCli(args: string[]): Promise<CliResult> {
 
   const writeReportPath = readOption(args, "--write-report");
   const docsPaths = readOptionValues(args, "--docs");
-  const changedOnly = args.includes("--changed-only");
+  const changedSince = readOption(args, "--changed-since");
+  const changedOnly = args.includes("--changed-only") || changedSince !== undefined;
   const checkExternalLinks = args.includes("--check-external-links");
   const claimsOnly = args.includes("--claims");
   const factsOnly = args.includes("--facts");
-  const changedPaths = changedOnly ? readChangedGitPaths(targetPath) : [];
+  const changedPaths =
+    changedSince !== undefined
+      ? readChangedGitPathsSince(targetPath, changedSince)
+      : changedOnly
+        ? readChangedGitPaths(targetPath)
+        : [];
   if (changedPaths instanceof Error) {
     return {
       exitCode: 2,
@@ -137,6 +144,7 @@ export async function runCli(args: string[]): Promise<CliResult> {
           root: targetPath,
           docsPaths,
           changedOnly,
+          changedSince,
           changedPaths,
           checkExternalLinks
         });
@@ -383,6 +391,27 @@ function readChangedGitPaths(root: string): string[] | Error {
 
       return status.includes("D") ? [] : [path];
     });
+}
+
+function readChangedGitPathsSince(root: string, ref: string): string[] | Error {
+  const result = spawnSync(
+    "git",
+    ["-C", root, "diff", "--name-only", "--diff-filter=ACMR", "-z", ref, "--"],
+    {
+      encoding: "utf8"
+    }
+  );
+
+  if (result.status !== 0) {
+    return new Error(
+      `Unable to read changed files since ${ref}: ${result.stderr.trim() || "unknown error"}`
+    );
+  }
+
+  return result.stdout
+    .split("\0")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 function filterChangedDocs(

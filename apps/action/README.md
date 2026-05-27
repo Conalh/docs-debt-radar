@@ -20,6 +20,14 @@ Fail on high-severity findings:
 
 The Action writes a Markdown job summary and uploads the generated report artifact. See [GitHub Action product docs](../../docs/product/github-action.md) for all inputs, outputs, and examples.
 
+Scan docs changed since a base ref:
+
+```yaml
+- uses: conalh/docs-debt-radar@v1
+  with:
+    changed-since: origin/main
+```
+
 Pull request comments are opt-in:
 
 ```yaml

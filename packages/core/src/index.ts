@@ -58,6 +58,7 @@ export interface ScanConfig {
   docsGlobs: string[];
   ignoreGlobs: string[];
   changedOnly: boolean;
+  changedSince?: string;
   checkExternalLinks: boolean;
   failOn: FailThreshold;
   outputFormat: OutputFormat;
@@ -282,6 +283,7 @@ export interface ScanDocsDebtInput {
   scannedAt?: string;
   docsPaths?: string[];
   changedOnly?: boolean;
+  changedSince?: string;
   changedPaths?: string[];
   checkExternalLinks?: boolean;
   externalLinkChecker?: ExternalLinkChecker;
@@ -419,6 +421,7 @@ export function createScanConfig(input: ScanConfig): ScanConfig {
     docsGlobs: [...input.docsGlobs],
     ignoreGlobs: [...input.ignoreGlobs],
     changedOnly: input.changedOnly,
+    ...(input.changedSince === undefined ? {} : { changedSince: input.changedSince }),
     checkExternalLinks: input.checkExternalLinks,
     failOn: input.failOn,
     outputFormat: input.outputFormat,
@@ -732,6 +735,7 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
     docsGlobs: docsPaths ?? ["README.md", "docs/**/*.md"],
     ignoreGlobs: ["node_modules/**", "dist/**", "coverage/**"],
     changedOnly: input.changedOnly ?? false,
+    ...(input.changedSince === undefined ? {} : { changedSince: input.changedSince }),
     checkExternalLinks: input.checkExternalLinks ?? false,
     failOn: "none",
     outputFormat: "json",

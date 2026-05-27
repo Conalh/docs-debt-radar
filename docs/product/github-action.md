@@ -43,6 +43,7 @@ Supported thresholds are `none`, `info`, `low`, `medium`, and `high`.
 | `report-format`        | `markdown`            | Report artifact format: `markdown` or `json`.     |
 | `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths.  |
 | `changed-only`         | `false`               | Scan only changed Markdown docs from git status.  |
+| `changed-since`        | empty                 | Scan only Markdown docs changed since a git ref.  |
 | `check-external-links` | `false`               | Opt in to network checks for external links.      |
 | `pr-comment`           | `false`               | Post a pull request summary comment when enabled. |
 | `github-token`         | empty                 | Token used for opt-in pull request comments.      |
@@ -94,6 +95,14 @@ The comment includes a stable marker, severity counts, suppression and warning c
 ## Changed-Only Scope
 
 Set `changed-only: true` to scan only Markdown docs reported by `git status` in the checked-out repository. The scanner still extracts repository facts from the full checkout, so changed docs can be checked against package scripts, routes, env vars, and workflow files elsewhere in a monorepo.
+
+Set `changed-since` when the changed docs should be computed against a base ref:
+
+```yaml
+- uses: conalh/docs-debt-radar@v1
+  with:
+    changed-since: origin/main
+```
 
 ## External Links
 

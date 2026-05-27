@@ -27,6 +27,7 @@ describe("GitHub Action wrapper", () => {
       reportFormat: "markdown",
       docsPaths: [],
       changedOnly: false,
+      changedSince: "",
       checkExternalLinks: false,
       prComment: false,
       githubToken: "",
@@ -55,6 +56,7 @@ describe("GitHub Action wrapper", () => {
         reportFormat: "markdown",
         docsPaths: ["README.md", "docs"],
         changedOnly: false,
+        changedSince: "",
         checkExternalLinks: true,
         prComment: false,
         githubToken: "",
@@ -83,6 +85,7 @@ describe("GitHub Action wrapper", () => {
         reportFormat: "markdown",
         docsPaths: [],
         changedOnly: true,
+        changedSince: "",
         checkExternalLinks: false,
         prComment: false,
         githubToken: "",
@@ -90,6 +93,33 @@ describe("GitHub Action wrapper", () => {
         artifactName: "docs-debt-report"
       })
     ).toEqual(["scan", ".", "--format", "json", "--fail-on", "none", "--changed-only"]);
+  });
+
+  it("passes changed-since through to the CLI", () => {
+    expect(
+      buildCliArgs({
+        scanPath: ".",
+        failOn: "none",
+        reportFormat: "markdown",
+        docsPaths: [],
+        changedOnly: false,
+        changedSince: "origin/main",
+        checkExternalLinks: false,
+        prComment: false,
+        githubToken: "",
+        reportPath: "docs-debt-report.md",
+        artifactName: "docs-debt-report"
+      })
+    ).toEqual([
+      "scan",
+      ".",
+      "--format",
+      "json",
+      "--fail-on",
+      "none",
+      "--changed-since",
+      "origin/main"
+    ]);
   });
 
   it("renders a concise Markdown job summary", () => {
@@ -200,6 +230,7 @@ describe("action.yml", () => {
     expect(metadata).toContain("report-format:");
     expect(metadata).toContain("docs:");
     expect(metadata).toContain("changed-only:");
+    expect(metadata).toContain("changed-since:");
     expect(metadata).toContain("check-external-links:");
     expect(metadata).toContain("pr-comment:");
     expect(metadata).toContain("github-token:");

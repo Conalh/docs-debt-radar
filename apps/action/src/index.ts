@@ -11,6 +11,7 @@ export interface ActionInputs {
   reportFormat: ReportFormat;
   docsPaths: string[];
   changedOnly: boolean;
+  changedSince: string;
   checkExternalLinks: boolean;
   prComment: boolean;
   githubToken: string;
@@ -74,6 +75,7 @@ export function normalizeInputs(env: Record<string, string | undefined>): Action
     reportFormat: normalizeReportFormat(readInput(env, "report-format", "markdown")),
     docsPaths: splitInputList(readInput(env, "docs", "")),
     changedOnly: readInput(env, "changed-only", "false").toLowerCase() === "true",
+    changedSince: readInput(env, "changed-since", ""),
     checkExternalLinks: readInput(env, "check-external-links", "false").toLowerCase() === "true",
     prComment: readInput(env, "pr-comment", "false").toLowerCase() === "true",
     githubToken: readInput(env, "github-token", ""),
@@ -90,6 +92,7 @@ export function buildCliArgs(input: ActionInputs): string[] | Error {
     "json",
     "--fail-on",
     input.failOn,
+    ...(input.changedSince ? ["--changed-since", input.changedSince] : []),
     ...(input.changedOnly ? ["--changed-only"] : []),
     ...(input.checkExternalLinks ? ["--check-external-links"] : []),
     ...(input.docsPaths.length > 0 ? ["--docs", ...input.docsPaths] : [])

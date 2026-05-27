@@ -15,6 +15,7 @@ Docs Debt Radar is intentionally small in V1. Most behavior is controlled throug
 | `--fail-on <threshold>`  | Return exit code `1` when a visible finding meets the threshold. |
 | `--docs <path...>`       | Restrict Markdown docs scanned for claims.                       |
 | `--changed-only`         | Scan only changed Markdown docs reported by `git status`.        |
+| `--changed-since <ref>`  | Scan only Markdown docs changed since a git ref.                 |
 | `--check-external-links` | Opt in to network checks for external Markdown links.            |
 | `--claims`               | Print extracted Markdown claims for debugging.                   |
 | `--facts`                | Print extracted repository facts for debugging.                  |
@@ -54,6 +55,7 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 | `report-format`        | `markdown`            | Report artifact format.                           |
 | `docs`                 | empty                 | Newline- or comma-separated Markdown docs paths.  |
 | `changed-only`         | `false`               | Scan only changed Markdown docs from git status.  |
+| `changed-since`        | empty                 | Scan only Markdown docs changed since a git ref.  |
 | `check-external-links` | `false`               | Opt in to network checks for external links.      |
 | `pr-comment`           | `false`               | Post a pull request summary comment when enabled. |
 | `github-token`         | empty                 | Token used for opt-in pull request comments.      |
@@ -62,7 +64,7 @@ Invalid suppressions are ignored and reported as `invalid_suppression` warnings.
 
 ## Current Limits
 
-- `changed-only` requires the scanned path to be inside a Git repository.
+- Changed-file modes require the scanned path to be inside a Git repository.
 - External URL checking is disabled by default and only runs with `--check-external-links`.
 - Patch output is advisory and only covers conservative single-line documentation edits.
 - Pull request comments are disabled by default and require `pr-comment: true` plus `github-token`.

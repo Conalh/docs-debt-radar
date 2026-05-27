@@ -47,6 +47,8 @@ describe("release readiness", () => {
     const releaseDocs = await readFile(join(root, "docs/product/release-readiness.md"), "utf8");
 
     expect(rootPackage.scripts).toMatchObject({
+      dogfood:
+        "pnpm --filter @docs-debt-radar/cli build && node apps/cli/dist/index.js scan . --format markdown --fail-on info",
       "pack:dry-run": "node scripts/pack-dry-run.mjs",
       "release:check": "node scripts/release-check.mjs",
       "smoke:action": "node scripts/smoke-action.mjs",

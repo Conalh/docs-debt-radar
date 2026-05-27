@@ -71,7 +71,7 @@ Run `npm run test:e2e` before opening a pull request.
 See [missing CLI reference](docs/cli.md).
 ```
 
-The fixture package only defines `dev` and `test`, and `docs/cli.md` does not exist.
+The fixture package only defines `dev` and `test`, and the CLI reference path does not exist.
 
 After:
 
@@ -101,7 +101,7 @@ Four records drive the scanner:
 | Record         | What it captures                                        | Example                       |
 | -------------- | ------------------------------------------------------- | ----------------------------- |
 | `DocumentFile` | Markdown text, headings, links, code spans, code blocks | `README.md`                   |
-| `Claim`        | Checkable doc statement with line number                | `npm run test:e2e`            |
+| `Claim`        | Checkable doc statement with line number                | setup command claim           |
 | `CodeFact`     | Current repository truth                                | package scripts `dev`, `test` |
 | `Finding`      | Claim/fact mismatch with severity and suggested edit    | missing package script        |
 
@@ -207,6 +207,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm dogfood
 pnpm smoke:action
 pnpm pack:dry-run
 pnpm smoke:packed

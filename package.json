@@ -11,6 +11,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "clean": "pnpm -r clean",
+    "dogfood": "pnpm --filter @docs-debt-radar/cli build && node apps/cli/dist/index.js scan . --format markdown --fail-on info",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "lint": "eslint .",

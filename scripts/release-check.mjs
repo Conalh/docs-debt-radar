@@ -22,6 +22,7 @@ if (!metadataOnly) {
     ["pnpm", ["typecheck"]],
     ["pnpm", ["test"]],
     ["pnpm", ["build"]],
+    ["pnpm", ["dogfood"]],
     ["pnpm", ["smoke:action"]],
     ["pnpm", ["pack:dry-run"]],
     ["pnpm", ["smoke:packed"]]

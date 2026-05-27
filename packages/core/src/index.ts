@@ -1,5 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
-import { basename, extname, join, relative, sep } from "node:path";
+import { basename, dirname, extname, join, relative, sep } from "node:path";
 
 import remarkParse from "remark-parse";
 import { unified } from "unified";
@@ -2034,6 +2034,24 @@ function stripAnchor(value: string): string {
   return value.split("#")[0] ?? value;
 }
 
+function normalizeDocumentRelativeTarget(documentPath: string, target: string): string {
+  const hashIndex = target.indexOf("#");
+  const targetPath = hashIndex === -1 ? target : target.slice(0, hashIndex);
+  const targetAnchor = hashIndex === -1 ? "" : target.slice(hashIndex);
+
+  if (!targetPath) {
+    return `${documentPath}${targetAnchor}`;
+  }
+
+  if (targetPath.startsWith("/")) {
+    return `${normalizePath(targetPath).replace(/^\/+/, "")}${targetAnchor}`;
+  }
+
+  const documentDirectory = normalizePath(dirname(documentPath));
+  const baseDirectory = documentDirectory === "." ? "" : documentDirectory;
+  return `${normalizePath(join(baseDirectory, targetPath)).replace(/^\.\//, "")}${targetAnchor}`;
+}
+
 function headingFromAnchor(value: string): string {
   const anchor = value.split("#")[1] ?? value;
   return anchor
@@ -2124,7 +2142,7 @@ function extractClaimsFromDocument(document: DocumentFile): Claim[] {
         lineNumber: link.lineNumber,
         kind: link.isImage ? "image_ref" : "file_ref",
         rawText: link.target,
-        normalizedValue: link.target,
+        normalizedValue: normalizeDocumentRelativeTarget(document.path, link.target),
         context: link.label,
         confidence: "high"
       })

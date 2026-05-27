@@ -28,6 +28,14 @@ Source files, tests, TypeScript configs, and `.tsbuildinfo` files should not be 
 
 ## Clean Machine Smoke
 
+Dogfood the scanner against this repository before cutting a release:
+
+```bash
+pnpm dogfood
+```
+
+The dogfood scan uses `.docs-debt-radar.json` to suppress intentional fixture, demo, example, and planning-note drift while still failing on unexpected visible findings.
+
 Run the local GitHub Action smoke before cutting a release:
 
 ```bash
@@ -62,7 +70,7 @@ Run the release gate before tagging:
 pnpm release:check
 ```
 
-The release gate verifies package versions, the changelog section, a clean tracked worktree, formatting, linting, typechecking, tests, build output, local Action behavior, package contents, and the packed CLI smoke.
+The release gate verifies package versions, the changelog section, a clean tracked worktree, formatting, linting, typechecking, tests, build output, the dogfood scan, local Action behavior, package contents, and the packed CLI smoke.
 
 1. Update all package versions to the target semver.
 2. Update `CHANGELOG.md` with a matching `## <version>` section.

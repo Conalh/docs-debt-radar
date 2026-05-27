@@ -1,0 +1,49 @@
+{
+  "ignore": [
+    {
+      "rule": "*",
+      "path": "PLAN.md",
+      "reason": "Ignored local implementation plan with aspirational paths and placeholder commands."
+    },
+    {
+      "rule": "*",
+      "path": "ROADMAP.md",
+      "reason": "Ignored local roadmap with future-oriented planning notes."
+    },
+    {
+      "rule": "*",
+      "path": "tests/fixtures/**",
+      "reason": "Fixture docs intentionally contain stale claims to exercise scanner rules."
+    },
+    {
+      "rule": "*",
+      "path": "docs/demo/**",
+      "reason": "Demo reports intentionally preserve stale fixture findings."
+    },
+    {
+      "rule": "*",
+      "path": "docs/examples/**",
+      "reason": "Example docs intentionally describe common stale findings for each project shape."
+    },
+    {
+      "rule": "missing-referenced-file",
+      "path": "packages/core/README.md",
+      "reason": "Core package README references generated dist files that appear after build and packaging."
+    },
+    {
+      "rule": "env-var-not-documented",
+      "path": "scripts/**",
+      "reason": "Release scripts read APPDATA only to locate pnpm or npm on Windows, not as project setup config."
+    },
+    {
+      "rule": "documented-env-var-not-used",
+      "path": "docs/product/release-readiness.md",
+      "reason": "LICENSE is a package file name in release docs, not an environment variable."
+    },
+    {
+      "rule": "stale-route-mention",
+      "path": "docs/product/markdown-claim-extraction.md",
+      "reason": "This page documents route claim extraction examples, not live app routes."
+    }
+  ]
+}

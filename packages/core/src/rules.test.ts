@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { scanDocsDebt } from "./index.js";
 
@@ -39,6 +41,12 @@ const fixtureIds = [
   "python-flask-drift",
   "express-route-drift"
 ];
+
+const tempDirs: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((path) => rm(path, { recursive: true, force: true })));
+});
 
 describe("scanDocsDebt", () => {
   it.each(fixtureIds)("matches the expected report for %s", async (fixtureId) => {
@@ -201,6 +209,37 @@ describe("scanDocsDebt", () => {
       low: 0,
       info: 2
     });
+  });
+
+  it("resolves relative Markdown links from the document directory", async () => {
+    const root = await mkdtemp(join(tmpdir(), "docs-debt-radar-relative-links-"));
+    tempDirs.push(root);
+    await mkdir(join(root, "apps/tool"), { recursive: true });
+    await mkdir(join(root, "docs/product"), { recursive: true });
+    await writeFile(
+      join(root, "apps/tool/README.md"),
+      "# Tool\n\nSee [product guide](../../docs/product/guide.md).\n",
+      "utf8"
+    );
+    await writeFile(join(root, "docs/product/guide.md"), "# Product Guide\n", "utf8");
+
+    const report = await scanDocsDebt({
+      root,
+      scannerVersion: "0.0.0-test",
+      scannedAt: "2026-05-27T00:00:00.000Z"
+    });
+
+    expect(report.findingsJson).toEqual([]);
+    expect(report.claimsJson).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          documentPath: "apps/tool/README.md",
+          kind: "file_ref",
+          rawText: "../../docs/product/guide.md",
+          normalizedValue: "docs/product/guide.md"
+        })
+      ])
+    );
   });
 });
 

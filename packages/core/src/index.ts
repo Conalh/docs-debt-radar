@@ -395,11 +395,12 @@ export const V1_RULES: readonly RuleMetadata[] = [
   },
   {
     id: "workflow-references-missing-script",
-    title: "Workflow references a package script that does not exist",
+    title: "Workflow references a package script or file that does not exist",
     severity: "high",
     description:
-      "Flags GitHub Actions run commands that call package scripts missing from package.json.",
-    falsePositiveNote: "The workflow may run in a subdirectory with a separate package manifest."
+      "Flags GitHub Actions run commands that call package scripts or local files missing from the repository.",
+    falsePositiveNote:
+      "The workflow may run in a subdirectory, generate the file earlier, or use files outside the scan scope."
   }
 ];
 
@@ -1225,8 +1226,11 @@ function findWorkflowMissingScripts(facts: readonly CodeFact[]): Finding[] {
   const scriptFacts = facts.filter((fact) => fact.kind === "package_script");
   const scriptNames = new Set(scriptFacts.map((fact) => fact.value));
   const definedScripts = formatList([...scriptNames].sort());
-
-  return facts
+  const existingPaths = new Set(
+    facts.filter((fact) => fact.kind === "file_exists").map((fact) => fact.value)
+  );
+  const commandFacts = facts.filter((fact) => fact.kind === "command_surface");
+  const missingPackageScripts = commandFacts
     .filter((fact) => fact.kind === "command_surface")
     .map((fact) => ({ fact, scriptName: parsePackageScriptCommand(fact.value) }))
     .filter(
@@ -1251,6 +1255,30 @@ function findWorkflowMissingScripts(facts: readonly CodeFact[]): Finding[] {
           "The workflow may run in a subdirectory with a separate package manifest."
       })
     );
+  const missingFiles = commandFacts
+    .map((fact) => ({ fact, path: parseWorkflowLocalFileCommand(fact.value) }))
+    .filter((entry): entry is { fact: CodeFact; path: string } => entry.path !== undefined)
+    .filter((entry) => !existingPaths.has(entry.path))
+    .map(({ fact, path }) =>
+      createFinding({
+        ruleId: "workflow-references-missing-script",
+        severity: "high",
+        title: "Workflow references a file that does not exist",
+        body: evidenceBody(
+          `The CI workflow runs \`${fact.value}\`.`,
+          `\`${path}\` is not present in the repository file tree.`
+        ),
+        documentPath: fact.sourcePath,
+        documentLine: fact.lineNumber,
+        claimId: fact.id,
+        relatedFactIds: [fact.id],
+        suggestedEdit: `Change the workflow command or add ${path}.`,
+        falsePositiveNote:
+          "The workflow may generate the file earlier or run in a subdirectory outside the scan scope."
+      })
+    );
+
+  return [...missingPackageScripts, ...missingFiles];
 }
 
 function applySuppressions(
@@ -2454,6 +2482,35 @@ function isExternalUrl(target: string): boolean {
 function parsePackageScriptCommand(command: string): string | undefined {
   const match = /^(?:npm|pnpm|yarn)\s+run\s+([A-Za-z0-9:_-]+)(?:\s|$)/.exec(command);
   return match?.[1];
+}
+
+function parseWorkflowLocalFileCommand(command: string): string | undefined {
+  const tokens = command.trim().split(/\s+/).map(unquote);
+  const [runner, ...args] = tokens;
+
+  if (!runner) {
+    return undefined;
+  }
+
+  if (["python", "python3", "node", "bash", "sh"].includes(runner)) {
+    return args.map(normalizeWorkflowCommandPath).find(isLocalWorkflowCommandPath);
+  }
+
+  const directPath = normalizeWorkflowCommandPath(runner);
+  return isLocalWorkflowCommandPath(directPath) ? directPath : undefined;
+}
+
+function normalizeWorkflowCommandPath(value: string): string {
+  return normalizePath(value).replace(/^\.\//, "");
+}
+
+function isLocalWorkflowCommandPath(value: string | undefined): value is string {
+  return (
+    value !== undefined &&
+    !value.startsWith("-") &&
+    !value.startsWith("../") &&
+    /^[\w.-]+\/[\w./-]+\.[A-Za-z0-9]+$/.test(value)
+  );
 }
 
 function looksLikeCommand(value: string): boolean {

@@ -1,6 +1,6 @@
 # GitHub Actions Example
 
-Docs Debt Radar can run as a repository workflow and can also scan workflow files for stale package script references.
+Docs Debt Radar can run as a repository workflow and can also scan workflow files for stale package script and local file references.
 
 ## Report-Only Workflow
 
@@ -30,6 +30,7 @@ jobs:
 ## Common Findings
 
 - `workflow-references-missing-script`: `.github/workflows/ci.yml` runs `npm run lint:ci`, but `package.json` does not define `lint:ci`.
+- `workflow-references-missing-script`: `.github/workflows/ci.yml` runs `python scripts/sync_docs.py`, but that file is absent.
 - `missing-package-script`: README tells contributors to run a script missing from `package.json`.
 
 The Action writes a Markdown job summary and uploads the generated report artifact.

@@ -14,7 +14,7 @@ Rules compare documentation claims with repository facts. Every finding includes
 | `broken-markdown-anchor`             | medium           | A Markdown link points to a missing heading anchor.                            |
 | `missing-screenshot`                 | medium           | Docs reference an image path that is not present.                              |
 | `external-link-unreachable`          | low              | An opted-in external link check returns a failed status or request error.      |
-| `workflow-references-missing-script` | high             | A GitHub Actions workflow runs a package script that is missing.               |
+| `workflow-references-missing-script` | high             | A GitHub Actions workflow runs a package script or local file that is missing. |
 
 ## Inspect Rules Locally
 

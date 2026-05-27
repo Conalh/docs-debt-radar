@@ -1,12 +1,12 @@
 {
   "fixtureId": "github-actions-drift",
   "summary": {
-    "totalFindings": 1,
+    "totalFindings": 2,
     "bySeverity": {
       "info": 0,
       "low": 0,
       "medium": 0,
-      "high": 1
+      "high": 2
     }
   },
   "findings": [
@@ -21,6 +21,18 @@
         "currentFact": "package.json defines scripts `build` and `test`, but not `lint:ci`."
       },
       "suggestedAction": "Change the workflow command or add a `lint:ci` script to package.json."
+    },
+    {
+      "ruleId": "workflow-references-missing-script",
+      "severity": "high",
+      "documentPath": ".github/workflows/ci.yml",
+      "documentLine": 13,
+      "title": "Workflow references a file that does not exist",
+      "evidence": {
+        "claim": "The CI workflow runs `python scripts/sync_docs.py`.",
+        "currentFact": "`scripts/sync_docs.py` is not present in the repository file tree."
+      },
+      "suggestedAction": "Change the workflow command or add scripts/sync_docs.py."
     }
   ]
 }

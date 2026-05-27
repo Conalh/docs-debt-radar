@@ -125,7 +125,7 @@ stale-route-mention                  docs mention a route not found by supported
 broken-markdown-anchor               docs link to a missing heading anchor
 missing-screenshot                   docs reference an image path that is absent
 external-link-unreachable            opted-in external link check returns a failure
-workflow-references-missing-script   workflow runs a package script that is absent
+workflow-references-missing-script   workflow runs a package script or file that is absent
 ```
 
 Inspect the live rule metadata:

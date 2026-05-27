@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { scanMarkdownClaims } from "@docs-debt-radar/core";
+import { scanMarkdownClaims, scanRepositoryFacts } from "@docs-debt-radar/core";
 
 export interface CliResult {
   exitCode: number;
@@ -18,6 +18,7 @@ export function createCliHelp(): string {
     "Options:",
     "  --format <text|markdown|json>       Output format",
     "  --claims                            Print extracted Markdown claims",
+    "  --facts                             Print extracted repository facts",
     "  --fail-on <none|low|medium|high>    Exit with code 1 at or above this severity",
     "  --write-report <path>               Write the report to a file",
     "",
@@ -49,16 +50,19 @@ export async function runCli(args: string[]): Promise<CliResult> {
 
   const format = readOption(args, "--format") ?? "text";
   const claimsOnly = args.includes("--claims");
+  const factsOnly = args.includes("--facts");
 
-  if (!claimsOnly) {
+  if (!claimsOnly && !factsOnly) {
     return {
       exitCode: 2,
       stdout: "",
-      stderr: "Only `scan <path> --claims` is implemented in the Markdown claim extraction MVP.\n"
+      stderr: "Use `scan <path> --claims` or `scan <path> --facts` in the current MVP.\n"
     };
   }
 
-  const result = await scanMarkdownClaims({ root: targetPath });
+  const result = claimsOnly
+    ? await scanMarkdownClaims({ root: targetPath })
+    : await scanRepositoryFacts({ root: targetPath });
 
   if (format === "json") {
     return {
@@ -69,6 +73,17 @@ export async function runCli(args: string[]): Promise<CliResult> {
   }
 
   if (format === "text") {
+    if ("facts" in result) {
+      return {
+        exitCode: 0,
+        stdout: result.facts
+          .map((fact) => `${fact.sourcePath}:${fact.lineNumber} ${fact.kind} ${fact.value}`)
+          .join("\n")
+          .concat(result.facts.length > 0 ? "\n" : ""),
+        stderr: ""
+      };
+    }
+
     return {
       exitCode: 0,
       stdout: result.claims

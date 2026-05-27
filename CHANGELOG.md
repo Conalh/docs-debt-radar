@@ -13,3 +13,5 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added the shared core evidence model for scanner config, documents, claims, facts, findings, warnings, and reports.
 - Added Markdown parsing and high-confidence claim extraction for links, images, inline code, fenced shell commands, env vars, routes, package scripts, and external URLs.
 - Added a CLI `scan <path> --claims --format json` path for listing extracted Markdown claims.
+- Added repository fact extraction for file tree entries, Markdown anchors, package scripts, env vars, Next.js routes, FastAPI routes, GitHub Actions workflows, and workflow commands.
+- Added a CLI `scan <path> --facts --format json` path for listing extracted repository facts.

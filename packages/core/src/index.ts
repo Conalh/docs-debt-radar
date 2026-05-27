@@ -225,6 +225,15 @@ export interface ScanMarkdownClaimsResult {
   warnings: ScannerWarning[];
 }
 
+export interface ScanRepositoryFactsInput {
+  root: string;
+}
+
+export interface ScanRepositoryFactsResult {
+  facts: CodeFact[];
+  warnings: ScannerWarning[];
+}
+
 interface MarkdownNode {
   type: string;
   value?: string;
@@ -246,6 +255,8 @@ interface MarkdownNode {
 
 const severityOrder: Severity[] = ["high", "medium", "low", "info"];
 const shellLanguages = new Set(["bash", "shell", "sh", "zsh", "console"]);
+const ignoredDirectories = new Set([".git", "node_modules", "dist", "coverage"]);
+const sourceExtensions = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".py"]);
 
 export function createStableId(namespace: string, parts: readonly string[]): string {
   const input = `${namespace}:${parts.join("\u001f")}`;
@@ -519,12 +530,417 @@ export async function scanMarkdownClaims(
   };
 }
 
+export async function scanRepositoryFacts(
+  input: ScanRepositoryFactsInput
+): Promise<ScanRepositoryFactsResult> {
+  const warnings: ScannerWarning[] = [];
+  const entries = await listRepositoryEntries(input.root, input.root);
+  const files = entries.filter((entry) => entry.entryType === "file");
+  const facts: CodeFact[] = [];
+
+  facts.push(...extractFileTreeFacts(entries));
+  facts.push(...(await extractMarkdownAnchorFacts(input.root, files, warnings)));
+  facts.push(...(await extractPackageScriptFacts(input.root, files, warnings)));
+  facts.push(...(await extractEnvFacts(input.root, files, warnings)));
+  facts.push(...(await extractRouteFacts(input.root, files, warnings)));
+  facts.push(...(await extractWorkflowFacts(input.root, files, warnings)));
+
+  return {
+    facts: facts.sort(compareFacts),
+    warnings
+  };
+}
+
 function compareFindings(left: Finding, right: Finding): number {
   return (
     severityOrder.indexOf(left.severity) - severityOrder.indexOf(right.severity) ||
     left.documentPath.localeCompare(right.documentPath) ||
     left.documentLine - right.documentLine ||
     left.ruleId.localeCompare(right.ruleId)
+  );
+}
+
+interface RepositoryEntry {
+  path: string;
+  entryType: "file" | "directory";
+}
+
+function extractFileTreeFacts(entries: readonly RepositoryEntry[]): CodeFact[] {
+  return entries.map((entry) =>
+    createCodeFact({
+      kind: "file_exists",
+      value: entry.path,
+      sourcePath: entry.path,
+      lineNumber: 1,
+      metadata: { entryType: entry.entryType }
+    })
+  );
+}
+
+async function extractMarkdownAnchorFacts(
+  root: string,
+  files: readonly RepositoryEntry[],
+  warnings: ScannerWarning[]
+): Promise<CodeFact[]> {
+  const facts: CodeFact[] = [];
+
+  for (const file of files.filter((entry) => extname(entry.path).toLowerCase() === ".md")) {
+    try {
+      const text = await readFile(join(root, file.path), "utf8");
+      const document = parseMarkdownDocument({ path: file.path, text });
+
+      for (const heading of document.headings) {
+        facts.push(
+          createCodeFact({
+            kind: "config_key",
+            value: `${file.path}#${heading.anchor}`,
+            sourcePath: file.path,
+            lineNumber: heading.lineNumber,
+            metadata: { configType: "markdown_anchor", heading: heading.text }
+          })
+        );
+      }
+    } catch (error) {
+      warnings.push(
+        createScannerWarning({
+          kind: "file_unreadable",
+          message: error instanceof Error ? error.message : "Unable to read Markdown file.",
+          path: file.path
+        })
+      );
+    }
+  }
+
+  return facts;
+}
+
+async function extractPackageScriptFacts(
+  root: string,
+  files: readonly RepositoryEntry[],
+  warnings: ScannerWarning[]
+): Promise<CodeFact[]> {
+  const facts: CodeFact[] = [];
+
+  for (const file of files.filter((entry) => basename(entry.path) === "package.json")) {
+    try {
+      const text = await readFile(join(root, file.path), "utf8");
+      const parsed = JSON.parse(text) as { name?: string; scripts?: Record<string, string> };
+
+      for (const [scriptName, command] of Object.entries(parsed.scripts ?? {})) {
+        facts.push(
+          createCodeFact({
+            kind: "package_script",
+            value: scriptName,
+            sourcePath: file.path,
+            lineNumber: findLineNumber(text, `"${scriptName}"`),
+            metadata: {
+              packageName: parsed.name ?? null,
+              command
+            }
+          })
+        );
+      }
+    } catch (error) {
+      warnings.push(
+        createScannerWarning({
+          kind: "file_unreadable",
+          message: error instanceof Error ? error.message : "Unable to parse package.json.",
+          path: file.path
+        })
+      );
+    }
+  }
+
+  return facts;
+}
+
+async function extractEnvFacts(
+  root: string,
+  files: readonly RepositoryEntry[],
+  warnings: ScannerWarning[]
+): Promise<CodeFact[]> {
+  const facts: CodeFact[] = [];
+
+  for (const file of files) {
+    if (basename(file.path).startsWith(".env") && basename(file.path).includes("example")) {
+      const text = await readTextForFact(root, file.path, warnings);
+      if (text === undefined) {
+        continue;
+      }
+
+      for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+        const match = /^([A-Z][A-Z0-9_]*)\s*=/.exec(line.trim());
+        if (!match?.[1]) {
+          continue;
+        }
+
+        facts.push(
+          createCodeFact({
+            kind: "env_var_declared",
+            value: match[1],
+            sourcePath: file.path,
+            lineNumber: lineIndex + 1,
+            metadata: { envSource: "example" }
+          })
+        );
+      }
+    }
+
+    if (!sourceExtensions.has(extname(file.path).toLowerCase())) {
+      continue;
+    }
+
+    const text = await readTextForFact(root, file.path, warnings);
+    if (text === undefined) {
+      continue;
+    }
+
+    for (const reference of extractEnvReferences(text)) {
+      facts.push(
+        createCodeFact({
+          kind: "env_var_declared",
+          value: reference.name,
+          sourcePath: file.path,
+          lineNumber: reference.lineNumber,
+          metadata: { envSource: "source_reference" }
+        })
+      );
+    }
+  }
+
+  return facts;
+}
+
+async function extractRouteFacts(
+  root: string,
+  files: readonly RepositoryEntry[],
+  warnings: ScannerWarning[]
+): Promise<CodeFact[]> {
+  const facts: CodeFact[] = [];
+
+  for (const file of files) {
+    const normalizedPath = normalizePath(file.path);
+
+    if (/^app\/.+\/page\.(?:tsx|ts|jsx|js)$/.test(normalizedPath)) {
+      facts.push(
+        createCodeFact({
+          kind: "route_exists",
+          value: nextRouteFromAppPath(normalizedPath, "page"),
+          sourcePath: file.path,
+          lineNumber: 1,
+          metadata: { framework: "nextjs", routeType: "page" }
+        })
+      );
+      continue;
+    }
+
+    if (/^app\/.+\/route\.(?:tsx|ts|jsx|js)$/.test(normalizedPath)) {
+      facts.push(
+        createCodeFact({
+          kind: "route_exists",
+          value: nextRouteFromAppPath(normalizedPath, "route"),
+          sourcePath: file.path,
+          lineNumber: 1,
+          metadata: {
+            framework: "nextjs",
+            routeType: normalizedPath.includes("/api/") ? "api" : "route"
+          }
+        })
+      );
+      continue;
+    }
+
+    if (extname(file.path).toLowerCase() === ".py") {
+      const text = await readTextForFact(root, file.path, warnings);
+      if (text === undefined) {
+        continue;
+      }
+
+      for (const route of extractFastApiRoutes(text)) {
+        facts.push(
+          createCodeFact({
+            kind: "route_exists",
+            value: route.path,
+            sourcePath: file.path,
+            lineNumber: route.lineNumber,
+            metadata: { framework: "fastapi", method: route.method }
+          })
+        );
+      }
+    }
+  }
+
+  return facts;
+}
+
+async function extractWorkflowFacts(
+  root: string,
+  files: readonly RepositoryEntry[],
+  warnings: ScannerWarning[]
+): Promise<CodeFact[]> {
+  const facts: CodeFact[] = [];
+
+  for (const file of files.filter((entry) =>
+    /^\.github\/workflows\/.+\.ya?ml$/.test(normalizePath(entry.path))
+  )) {
+    const text = await readTextForFact(root, file.path, warnings);
+    if (text === undefined) {
+      continue;
+    }
+
+    const workflowName = /^name:\s*(.+)$/m.exec(text)?.[1]?.trim();
+    if (workflowName) {
+      facts.push(
+        createCodeFact({
+          kind: "workflow_exists",
+          value: unquote(workflowName),
+          sourcePath: file.path,
+          lineNumber: findLineNumber(text, "name:"),
+          metadata: { fileName: basename(file.path) }
+        })
+      );
+    }
+
+    for (const command of extractWorkflowRunCommands(text)) {
+      facts.push(
+        createCodeFact({
+          kind: "command_surface",
+          value: command.command,
+          sourcePath: file.path,
+          lineNumber: command.lineNumber,
+          metadata: { commandSource: "github_actions" }
+        })
+      );
+    }
+  }
+
+  return facts;
+}
+
+async function listRepositoryEntries(root: string, current: string): Promise<RepositoryEntry[]> {
+  const entries = await readdir(current, { withFileTypes: true });
+  const paths: RepositoryEntry[] = [];
+
+  for (const entry of entries) {
+    if (ignoredDirectories.has(entry.name)) {
+      continue;
+    }
+
+    const absolutePath = join(current, entry.name);
+    const relativePath = normalizePath(relative(root, absolutePath));
+
+    if (entry.isDirectory()) {
+      paths.push({ path: relativePath, entryType: "directory" });
+      paths.push(...(await listRepositoryEntries(root, absolutePath)));
+      continue;
+    }
+
+    if (entry.isFile()) {
+      paths.push({ path: relativePath, entryType: "file" });
+    }
+  }
+
+  return paths.sort((left, right) => left.path.localeCompare(right.path));
+}
+
+async function readTextForFact(
+  root: string,
+  path: string,
+  warnings: ScannerWarning[]
+): Promise<string | undefined> {
+  try {
+    return await readFile(join(root, path), "utf8");
+  } catch (error) {
+    warnings.push(
+      createScannerWarning({
+        kind: "file_unreadable",
+        message: error instanceof Error ? error.message : "Unable to read file.",
+        path
+      })
+    );
+    return undefined;
+  }
+}
+
+function extractEnvReferences(text: string): Array<{ name: string; lineNumber: number }> {
+  const references: Array<{ name: string; lineNumber: number }> = [];
+  const patterns = [
+    /process\.env\.([A-Z][A-Z0-9_]*)/g,
+    /process\.env\[['"]([A-Z][A-Z0-9_]*)['"]\]/g,
+    /os\.environ\[['"]([A-Z][A-Z0-9_]*)['"]\]/g,
+    /os\.getenv\(['"]([A-Z][A-Z0-9_]*)['"]\)/g
+  ];
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    for (const pattern of patterns) {
+      pattern.lastIndex = 0;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(line)) !== null) {
+        if (match[1]) {
+          references.push({ name: match[1], lineNumber: lineIndex + 1 });
+        }
+      }
+    }
+  }
+
+  return references;
+}
+
+function extractFastApiRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const routePattern = /@app\.(get|post|put|patch|delete|options|head)\(\s*["']([^"']+)["']/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    routePattern.lastIndex = 0;
+    const match = routePattern.exec(line);
+    if (match?.[1] && match[2]) {
+      routes.push({ method: match[1], path: match[2], lineNumber: lineIndex + 1 });
+    }
+  }
+
+  return routes;
+}
+
+function extractWorkflowRunCommands(text: string): Array<{ command: string; lineNumber: number }> {
+  const commands: Array<{ command: string; lineNumber: number }> = [];
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    const match = /^\s*-\s+run:\s*(.+)$/.exec(line);
+    if (match?.[1]) {
+      commands.push({ command: unquote(match[1].trim()), lineNumber: lineIndex + 1 });
+    }
+  }
+
+  return commands;
+}
+
+function nextRouteFromAppPath(path: string, terminalFile: "page" | "route"): string {
+  const segments = path.split("/");
+  const terminalIndex = segments.findIndex((segment) => segment.startsWith(`${terminalFile}.`));
+  const routeSegments = segments
+    .slice(1, terminalIndex)
+    .filter((segment) => !segment.startsWith("(") && !segment.startsWith("@"));
+
+  return `/${routeSegments.join("/")}`.replace(/\/$/, "") || "/";
+}
+
+function findLineNumber(text: string, needle: string): number {
+  const index = text.split(/\r?\n/).findIndex((line) => line.includes(needle));
+  return index === -1 ? 1 : index + 1;
+}
+
+function unquote(value: string): string {
+  return value.replace(/^["']|["']$/g, "");
+}
+
+function compareFacts(left: CodeFact, right: CodeFact): number {
+  return (
+    left.kind.localeCompare(right.kind) ||
+    left.sourcePath.localeCompare(right.sourcePath) ||
+    left.lineNumber - right.lineNumber ||
+    left.value.localeCompare(right.value)
   );
 }
 

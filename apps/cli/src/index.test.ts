@@ -45,4 +45,42 @@ describe("createCliHelp", () => {
     ]);
     expect(result.stderr).toBe("");
   });
+
+  it("prints extracted repository facts as JSON", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/github-actions-drift"),
+      "--facts",
+      "--format",
+      "json"
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    const output = JSON.parse(result.stdout) as {
+      facts: Array<{
+        kind: string;
+        value: string;
+        sourcePath: string;
+        lineNumber: number;
+      }>;
+    };
+
+    expect(output.facts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "workflow_exists",
+          value: "CI",
+          sourcePath: ".github/workflows/ci.yml",
+          lineNumber: 1
+        }),
+        expect.objectContaining({
+          kind: "command_surface",
+          value: "npm run lint:ci",
+          sourcePath: ".github/workflows/ci.yml",
+          lineNumber: 12
+        })
+      ])
+    );
+    expect(result.stderr).toBe("");
+  });
 });

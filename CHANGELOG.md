@@ -16,3 +16,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added repository fact extraction for file tree entries, Markdown anchors, package scripts, env vars, Next.js routes, FastAPI routes, GitHub Actions workflows, and workflow commands.
 - Added a CLI `scan <path> --facts --format json` path for listing extracted repository facts.
 - Added the V1 rules engine and default CLI findings scan path.
+- Added CLI report formats, `--write-report`, `--fail-on`, `list-rules`, and `explain <rule-id>`.

@@ -1,14 +1,22 @@
-import { describe, expect, it } from "vitest";
-
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { afterEach, describe, expect, it } from "vitest";
+
 import { createCliHelp, runCli } from "./index.js";
+
+const tempDirs: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((path) => rm(path, { recursive: true, force: true })));
+});
 
 describe("createCliHelp", () => {
   it("documents the initial scan command surface", () => {
     expect(createCliHelp()).toContain("docs-debt-radar scan <path>");
     expect(createCliHelp()).toContain("--format <text|markdown|json>");
-    expect(createCliHelp()).toContain("--fail-on <none|low|medium|high>");
+    expect(createCliHelp()).toContain("--fail-on <none|info|low|medium|high>");
   });
 
   it("prints extracted Markdown claims as JSON", async () => {
@@ -111,5 +119,81 @@ describe("createCliHelp", () => {
       ])
     );
     expect(result.stderr).toBe("");
+  });
+
+  it("restricts scanned documentation with --docs", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "json",
+      "--docs",
+      "docs/setup.md"
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      summaryJson: {
+        totalFindings: 0,
+        scannedDocumentCount: 1
+      },
+      documentsJson: [expect.objectContaining({ path: "docs/setup.md" })]
+    });
+    expect(result.stderr).toBe("");
+  });
+
+  it("prints Markdown reports and writes reports to disk", async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), "docs-debt-radar-"));
+    tempDirs.push(tempDir);
+    const reportPath = join(tempDir, "report.md");
+
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "markdown",
+      "--write-report",
+      reportPath
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("# Docs Debt Report");
+    expect(result.stdout).toContain("## HIGH: Documented package script does not exist");
+    expect(await readFile(reportPath, "utf8")).toBe(result.stdout);
+    expect(result.stderr).toBe("");
+  });
+
+  it("returns exit code 1 when findings meet the fail threshold", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "json",
+      "--fail-on",
+      "high"
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      summaryJson: {
+        totalFindings: 2
+      }
+    });
+    expect(result.stderr).toBe("");
+  });
+
+  it("prints rule listings and explanations", async () => {
+    const listResult = await runCli(["list-rules"]);
+    const explainResult = await runCli(["explain", "missing-package-script"]);
+
+    expect(listResult.exitCode).toBe(0);
+    expect(listResult.stdout).toContain("missing-package-script");
+    expect(listResult.stdout).toContain("workflow-references-missing-script");
+    expect(listResult.stderr).toBe("");
+
+    expect(explainResult.exitCode).toBe(0);
+    expect(explainResult.stdout).toContain("# missing-package-script");
+    expect(explainResult.stdout).toContain("Documented package script does not exist");
+    expect(explainResult.stderr).toBe("");
   });
 });

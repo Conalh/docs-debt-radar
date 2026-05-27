@@ -23,6 +23,7 @@ The first V1 behavior is defined by product docs and fixtures:
 - [Markdown claim extraction](docs/product/markdown-claim-extraction.md)
 - [Repository fact extraction](docs/product/repository-fact-extraction.md)
 - [Rules engine](docs/product/rules-engine.md)
+- [CLI product loop](docs/product/cli-product-loop.md)
 - [Fixture manifest](tests/fixtures/fixture-manifest.json)
 
 The fixture set currently covers a basic Node package, a Next.js app, a FastAPI app, a GitHub Actions workflow, and docs assets/env examples. Each fixture includes an `expected-report.json` file so scanner behavior can be developed against concrete examples.
@@ -49,6 +50,19 @@ Current findings scan:
 
 ```bash
 docs-debt-radar scan tests/fixtures/basic-node-drift --format json
+```
+
+Write a Markdown report and fail on high findings:
+
+```bash
+docs-debt-radar scan . --format markdown --write-report docs-debt-report.md --fail-on high
+```
+
+Inspect rule docs:
+
+```bash
+docs-debt-radar list-rules
+docs-debt-radar explain missing-package-script
 ```
 
 The scanner will:

@@ -12,6 +12,7 @@ docs-debt-radar scan . --format markdown
 docs-debt-radar scan . --format json
 docs-debt-radar scan . --format sarif
 docs-debt-radar scan . --format patch
+docs-debt-radar scan . --format agent
 docs-debt-radar scan . --changed-only
 docs-debt-radar scan . --changed-since origin/main
 docs-debt-radar scan . --check-external-links
@@ -58,8 +59,19 @@ docs-debt-radar scan . --fail-on high
 - `json`: full structured scan result.
 - `sarif`: SARIF 2.1.0 report for code-scanning tools.
 - `patch`: advisory unified-diff suggestions for patchable single-line doc findings.
+- `agent`: compact Markdown handoff for coding agents before they follow repo docs.
 
-Markdown, SARIF, and patch output are only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.
+Markdown, SARIF, patch, and agent output are only supported for the full docs debt scan, not the `--claims` or `--facts` debug helpers.
+
+## Agent Handoff
+
+Agent output is designed for pasting into coding-agent context:
+
+```bash
+docs-debt-radar scan . --format agent
+```
+
+It keeps the report short: visible finding counts, stale instruction locations, rule IDs, severity, and the next action from each finding. Use it before asking an agent to follow local README, setup, or workflow docs in a fast-moving repository.
 
 ## Patch Suggestions
 

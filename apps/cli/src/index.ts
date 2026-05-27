@@ -28,7 +28,7 @@ export function createCliHelp(): string {
     "  docs-debt-radar scan <path> [options]",
     "",
     "Options:",
-    "  --format <text|markdown|json|sarif|patch> Output format",
+    "  --format <text|markdown|json|sarif|patch|agent> Output format",
     "  --claims                            Print extracted Markdown claims",
     "  --facts                             Print extracted repository facts",
     "  --docs <path...>                    Restrict Markdown docs scanned for claims",
@@ -204,6 +204,14 @@ function renderResult(
     return new Error("Patch output is only supported for full scan reports.");
   }
 
+  if (format === "agent") {
+    if ("findingsJson" in result) {
+      return renderAgentReport(result);
+    }
+
+    return new Error("Agent output is only supported for full scan reports.");
+  }
+
   if (format !== "text") {
     return new Error(`Unsupported output format: ${format}`);
   }
@@ -239,6 +247,44 @@ function renderPatchReport(report: ScanReport): string {
   }
 
   return `${report.suggestedFixesJson.map((fix) => fix.unifiedDiff.trimEnd()).join("\n\n")}\n`;
+}
+
+function renderAgentReport(report: ScanReport): string {
+  const findings = report.findingsJson;
+
+  if (findings.length === 0) {
+    return [
+      "# Docs Debt Agent Handoff",
+      "",
+      "No stale documentation instructions found.",
+      "",
+      "## Agent Notes",
+      "",
+      "- Use the normal project docs.",
+      ""
+    ].join("\n");
+  }
+
+  return [
+    "# Docs Debt Agent Handoff",
+    "",
+    `Visible findings: ${report.summaryJson.totalFindings}`,
+    `Suppressed findings: ${report.summaryJson.suppressedFindingCount}`,
+    `Warnings: ${report.summaryJson.warningCount}`,
+    "",
+    "## Stale Instructions",
+    "",
+    ...findings.flatMap((finding) => [
+      `- [${finding.severity}] \`${finding.documentPath}:${finding.documentLine}\` \`${finding.ruleId}\` ${finding.title}`,
+      `  Next action: ${finding.suggestedEdit}`
+    ]),
+    "",
+    "## Agent Notes",
+    "",
+    "- Treat these findings as stale instructions before following the referenced docs.",
+    "- Prefer fixing active README/setup docs before suppressing findings.",
+    ""
+  ].join("\n");
 }
 
 interface SarifLog {

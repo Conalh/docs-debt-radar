@@ -30,3 +30,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added opt-in GitHub Action pull request summary comments.
 - Added `--changed-since` base-ref scanning for pull request and monorepo workflows.
 - Downgraded archived and changelog documentation drift to informational findings.
+- Added CLI `--format agent` handoff reports for coding agents.

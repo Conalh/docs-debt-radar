@@ -14,6 +14,7 @@ npm install -D @docs-debt-radar/cli
 npx docs-debt-radar scan . --format markdown
 npx docs-debt-radar scan . --changed-since origin/main
 npx docs-debt-radar scan . --format patch
+npx docs-debt-radar scan . --format agent
 npx docs-debt-radar list-rules
 npx docs-debt-radar explain missing-package-script
 ```

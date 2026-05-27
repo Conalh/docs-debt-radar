@@ -19,7 +19,7 @@ afterEach(async () => {
 describe("createCliHelp", () => {
   it("documents the initial scan command surface", () => {
     expect(createCliHelp()).toContain("docs-debt-radar scan <path>");
-    expect(createCliHelp()).toContain("--format <text|markdown|json|sarif|patch>");
+    expect(createCliHelp()).toContain("--format <text|markdown|json|sarif|patch|agent>");
     expect(createCliHelp()).toContain("--changed-since <ref>");
     expect(createCliHelp()).toContain("--check-external-links");
     expect(createCliHelp()).toContain("--fail-on <none|info|low|medium|high>");
@@ -361,6 +361,27 @@ describe("createCliHelp", () => {
     expect(result.stdout).toContain("-Run `npm run test:e2e` before opening a pull request.");
     expect(result.stdout).toContain("@@ -10,1 +10,0 @@");
     expect(result.stdout).toContain("-See [missing CLI reference](docs/cli.md).");
+    expect(result.stderr).toBe("");
+  });
+
+  it("prints an agent handoff report for stale documentation instructions", async () => {
+    const result = await runCli([
+      "scan",
+      join(process.cwd(), "tests/fixtures/basic-node-drift"),
+      "--format",
+      "agent"
+    ]);
+
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain("# Docs Debt Agent Handoff");
+    expect(result.stdout).toContain("## Stale Instructions");
+    expect(result.stdout).toContain(
+      "- [high] `README.md:7` `missing-package-script` Documented package script does not exist"
+    );
+    expect(result.stdout).toContain(
+      "Next action: Update the README command or add a `test:e2e` script to package.json."
+    );
+    expect(result.stdout).toContain("## Agent Notes");
     expect(result.stderr).toBe("");
   });
 

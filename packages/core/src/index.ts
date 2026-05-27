@@ -1981,7 +1981,7 @@ function extractFastApiRoutes(
   text: string
 ): Array<{ method: string; path: string; lineNumber: number }> {
   const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
-  const routePattern = /@app\.(get|post|put|patch|delete|options|head)\(\s*["']([^"']+)["']/g;
+  const routePattern = /@\w+\.(get|post|put|patch|delete|options|head)\(\s*["']([^"']+)["']/g;
 
   for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
     routePattern.lastIndex = 0;

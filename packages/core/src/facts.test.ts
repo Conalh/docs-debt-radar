@@ -173,7 +173,14 @@ describe("scanRepositoryFacts", () => {
           kind: "route_exists",
           value: "/health",
           sourcePath: "app/main.py",
-          lineNumber: 9,
+          lineNumber: 10,
+          metadataJson: { framework: "fastapi", method: "get" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users",
+          sourcePath: "app/main.py",
+          lineNumber: 15,
           metadataJson: { framework: "fastapi", method: "get" }
         }
       ])

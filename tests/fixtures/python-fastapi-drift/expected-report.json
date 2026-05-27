@@ -1,27 +1,15 @@
 {
   "fixtureId": "python-fastapi-drift",
   "summary": {
-    "totalFindings": 2,
+    "totalFindings": 1,
     "bySeverity": {
       "info": 0,
       "low": 1,
-      "medium": 1,
+      "medium": 0,
       "high": 0
     }
   },
   "findings": [
-    {
-      "ruleId": "stale-route-mention",
-      "severity": "medium",
-      "documentPath": "README.md",
-      "documentLine": 5,
-      "title": "Documented FastAPI route was not found",
-      "evidence": {
-        "claim": "README.md documents endpoint `/api/users`.",
-        "currentFact": "app/main.py defines `/health`, but not `/api/users`."
-      },
-      "suggestedAction": "Update the API docs or add the missing FastAPI route."
-    },
     {
       "ruleId": "documented-env-var-not-used",
       "severity": "low",

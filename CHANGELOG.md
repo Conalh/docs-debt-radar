@@ -37,3 +37,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added a dogfood scan script and repo suppression config for intentional fixture/demo drift.
 - Added Django route extraction for literal `path()` URL patterns.
 - Added GitHub Actions workflow checks for missing local command files.
+- Added FastAPI `APIRouter` decorator route extraction.

@@ -75,6 +75,16 @@ Restrict scanning to selected docs:
 
 The Action always attempts to upload the generated report artifact, even when `fail-on` makes the scan step return exit code `1`. The job summary includes severity counts, warning counts, suppression counts, and the first ten visible findings.
 
+## Local Validation
+
+Validate the Action wrapper against a temporary demo checkout before release:
+
+```bash
+pnpm smoke:action
+```
+
+The smoke runs the built Action wrapper with GitHub-style output and summary files, then verifies the generated report artifact and Action outputs.
+
 ## Pull Request Comments
 
 Set `pr-comment: true` to post the same concise summary as a pull request comment. This is opt-in because it needs a token with permission to write PR issue comments.

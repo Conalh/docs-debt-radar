@@ -32,3 +32,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Downgraded archived and changelog documentation drift to informational findings.
 - Added CLI `--format agent` handoff reports for coding agents.
 - Added release check automation and a tag-triggered release verification workflow.
+- Added a local GitHub Action smoke test for temporary demo checkout validation.

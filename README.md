@@ -206,6 +206,7 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm smoke:action
 pnpm pack:dry-run
 pnpm smoke:packed
 pnpm release:check

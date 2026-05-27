@@ -28,6 +28,14 @@ Source files, tests, TypeScript configs, and `.tsbuildinfo` files should not be 
 
 ## Clean Machine Smoke
 
+Run the local GitHub Action smoke before cutting a release:
+
+```bash
+pnpm smoke:action
+```
+
+The Action smoke builds the workspace, copies the basic fixture into a temporary demo checkout, runs the built composite Action wrapper with GitHub-style output and summary files, and verifies the generated report-only artifact.
+
 Run the packed CLI smoke before cutting a release:
 
 ```bash
@@ -54,7 +62,7 @@ Run the release gate before tagging:
 pnpm release:check
 ```
 
-The release gate verifies package versions, the changelog section, a clean tracked worktree, formatting, linting, typechecking, tests, build output, package contents, and the packed CLI smoke.
+The release gate verifies package versions, the changelog section, a clean tracked worktree, formatting, linting, typechecking, tests, build output, local Action behavior, package contents, and the packed CLI smoke.
 
 1. Update all package versions to the target semver.
 2. Update `CHANGELOG.md` with a matching `## <version>` section.

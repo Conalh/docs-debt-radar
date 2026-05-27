@@ -49,9 +49,11 @@ describe("release readiness", () => {
     expect(rootPackage.scripts).toMatchObject({
       "pack:dry-run": "node scripts/pack-dry-run.mjs",
       "release:check": "node scripts/release-check.mjs",
+      "smoke:action": "node scripts/smoke-action.mjs",
       "smoke:packed": "node scripts/smoke-packed-cli.mjs"
     });
     expect(releaseDocs).toContain("Node.js 22");
+    expect(releaseDocs).toContain("pnpm smoke:action");
     expect(releaseDocs).toContain("npm pack --dry-run");
     expect(releaseDocs).toContain("pnpm release:check");
     expect(releaseDocs).toContain("clean machine");

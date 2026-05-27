@@ -33,3 +33,13 @@ jobs:
 - `missing-package-script`: README tells contributors to run a script missing from `package.json`.
 
 The Action writes a Markdown job summary and uploads the generated report artifact.
+
+## Local Action Smoke
+
+Before tagging a release, run:
+
+```bash
+pnpm smoke:action
+```
+
+This validates the Action wrapper in a temporary demo checkout without requiring a remote repository.

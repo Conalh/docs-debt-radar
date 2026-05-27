@@ -17,3 +17,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added a CLI `scan <path> --facts --format json` path for listing extracted repository facts.
 - Added the V1 rules engine and default CLI findings scan path.
 - Added CLI report formats, `--write-report`, `--fail-on`, `list-rules`, and `explain <rule-id>`.
+- Added inline and config-file suppressions with required reasons and report counts.

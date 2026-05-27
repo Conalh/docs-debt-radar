@@ -98,6 +98,7 @@ describe("evidence model", () => {
           low: 0,
           info: 0
         },
+        suppressedFindingCount: 0,
         warningCount: 1,
         scannedDocumentCount: 1,
         claimCount: 1,
@@ -107,6 +108,7 @@ describe("evidence model", () => {
       claimsJson: [claim],
       factsJson: [fact],
       findingsJson: [finding],
+      suppressionsJson: [],
       warningsJson: [warning],
       markdown: "# Docs Debt Report\n\n1 high finding."
     });

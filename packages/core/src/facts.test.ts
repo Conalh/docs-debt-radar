@@ -1,12 +1,20 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { scanRepositoryFacts } from "./index.js";
 
 function fixturePath(name: string): string {
   return join(process.cwd(), "tests/fixtures", name);
 }
+
+const tempDirs: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(tempDirs.splice(0).map((path) => rm(path, { recursive: true, force: true })));
+});
 
 describe("scanRepositoryFacts", () => {
   it("extracts file tree, Markdown anchor, and package script facts", async () => {
@@ -50,6 +58,30 @@ describe("scanRepositoryFacts", () => {
           lineNumber: 6,
           metadataJson: { packageName: "basic-node-drift", command: "node --test" }
         }
+      ])
+    );
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("parses package manifests with a UTF-8 byte order mark", async () => {
+    const root = await mkdtemp(join(tmpdir(), "docs-debt-radar-facts-"));
+    tempDirs.push(root);
+    await writeFile(
+      join(root, "package.json"),
+      `\uFEFF${JSON.stringify({ name: "bom-package", scripts: { test: "node --test" } })}\n`,
+      "utf8"
+    );
+
+    const result = await scanRepositoryFacts({ root });
+
+    expect(result.facts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "package_script",
+          value: "test",
+          sourcePath: "package.json",
+          metadataJson: { packageName: "bom-package", command: "node --test" }
+        })
       ])
     );
     expect(result.warnings).toEqual([]);

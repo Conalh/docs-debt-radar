@@ -42,7 +42,9 @@ export type ScannerWarningKind =
   | "file_unreadable"
   | "file_too_large"
   | "unsupported_framework"
+  | "invalid_suppression"
   | "rule_error";
+export type SuppressionSource = "inline" | "config";
 
 export interface SourceSpan {
   lineNumber: number;
@@ -134,9 +136,22 @@ export interface ScannerWarning {
   lineNumber?: number;
 }
 
+export interface AppliedSuppression {
+  id: string;
+  findingId: string;
+  ruleId: string;
+  documentPath: string;
+  documentLine: number;
+  reason: string;
+  source: SuppressionSource;
+  suppressionPath: string;
+  suppressionLine?: number;
+}
+
 export interface ScanSummary {
   totalFindings: number;
   bySeverity: Record<Severity, number>;
+  suppressedFindingCount: number;
   warningCount: number;
   scannedDocumentCount: number;
   claimCount: number;
@@ -154,6 +169,7 @@ export interface ScanReport {
   claimsJson: Claim[];
   factsJson: CodeFact[];
   findingsJson: Finding[];
+  suppressionsJson: AppliedSuppression[];
   warningsJson: ScannerWarning[];
   markdown: string;
 }
@@ -205,6 +221,7 @@ export interface CreateScanReportInput {
   claims: Claim[];
   facts: CodeFact[];
   findings: Finding[];
+  suppressions?: AppliedSuppression[];
   warnings: ScannerWarning[];
   markdown: string;
 }
@@ -248,6 +265,17 @@ export interface RuleMetadata {
   severity: Severity;
   description: string;
   falsePositiveNote: string;
+}
+
+interface SuppressionDirective {
+  ruleId: string;
+  reason: string;
+  source: SuppressionSource;
+  suppressionPath: string;
+  suppressionLine?: number;
+  documentPath?: string;
+  targetLine?: number;
+  pathPattern?: string;
 }
 
 interface MarkdownNode {
@@ -444,7 +472,8 @@ export function summarizeFindings(
   documents: readonly DocumentFile[],
   claims: readonly Claim[],
   facts: readonly CodeFact[],
-  warnings: readonly ScannerWarning[]
+  warnings: readonly ScannerWarning[],
+  suppressions: readonly AppliedSuppression[] = []
 ): ScanSummary {
   const bySeverity: Record<Severity, number> = {
     high: 0,
@@ -460,6 +489,7 @@ export function summarizeFindings(
   return {
     totalFindings: findings.length,
     bySeverity,
+    suppressedFindingCount: suppressions.length,
     warningCount: warnings.length,
     scannedDocumentCount: documents.length,
     claimCount: claims.length,
@@ -469,6 +499,7 @@ export function summarizeFindings(
 
 export function createScanReport(input: CreateScanReportInput): ScanReport {
   const findings = [...input.findings].sort(compareFindings);
+  const suppressions = [...(input.suppressions ?? [])].sort(compareSuppressions);
 
   return {
     id: createStableId("scan", [input.repoRoot, input.scannedAt, input.scannerVersion]),
@@ -481,7 +512,8 @@ export function createScanReport(input: CreateScanReportInput): ScanReport {
       input.documents,
       input.claims,
       input.facts,
-      input.warnings
+      input.warnings,
+      suppressions
     ),
     documentsJson: input.documents.map((document) => ({ ...document })),
     claimsJson: input.claims.map((claim) => ({ ...claim })),
@@ -490,6 +522,7 @@ export function createScanReport(input: CreateScanReportInput): ScanReport {
       ...finding,
       relatedFactIds: [...finding.relatedFactIds]
     })),
+    suppressionsJson: suppressions.map((suppression) => ({ ...suppression })),
     warningsJson: input.warnings.map((warning) => ({ ...warning })),
     markdown: input.markdown
   };
@@ -519,6 +552,7 @@ export function createEmptyScanReport(input: {
     claims: [],
     facts: [],
     findings: [],
+    suppressions: [],
     warnings: [],
     markdown: ""
   });
@@ -633,7 +667,14 @@ export async function scanRepositoryFacts(
 export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport> {
   const claimsResult = await scanMarkdownClaims({ root: input.root, docsPaths: input.docsPaths });
   const factsResult = await scanRepositoryFacts({ root: input.root });
+  const warnings = [...claimsResult.warnings, ...factsResult.warnings];
   const findings = runRules(claimsResult.claims, factsResult.facts);
+  const suppressionDirectives = await readSuppressionDirectives(
+    input.root,
+    claimsResult.documents,
+    warnings
+  );
+  const suppressionResult = applySuppressions(findings, suppressionDirectives);
   const scannedAt = input.scannedAt ?? new Date().toISOString();
   const scannerVersion = input.scannerVersion ?? "0.0.0";
   const config = createScanConfig({
@@ -654,9 +695,10 @@ export async function scanDocsDebt(input: ScanDocsDebtInput): Promise<ScanReport
     documents: claimsResult.documents,
     claims: claimsResult.claims,
     facts: factsResult.facts,
-    findings,
-    warnings: [...claimsResult.warnings, ...factsResult.warnings],
-    markdown: renderMarkdownFindings(findings)
+    findings: suppressionResult.findings,
+    suppressions: suppressionResult.suppressions,
+    warnings,
+    markdown: renderMarkdownFindings(suppressionResult.findings, suppressionResult.suppressions)
   });
 }
 
@@ -666,6 +708,15 @@ function compareFindings(left: Finding, right: Finding): number {
     left.documentPath.localeCompare(right.documentPath) ||
     left.documentLine - right.documentLine ||
     left.ruleId.localeCompare(right.ruleId)
+  );
+}
+
+function compareSuppressions(left: AppliedSuppression, right: AppliedSuppression): number {
+  return (
+    left.documentPath.localeCompare(right.documentPath) ||
+    left.documentLine - right.documentLine ||
+    left.ruleId.localeCompare(right.ruleId) ||
+    left.source.localeCompare(right.source)
   );
 }
 
@@ -956,13 +1007,242 @@ function findWorkflowMissingScripts(facts: readonly CodeFact[]): Finding[] {
     );
 }
 
-function renderMarkdownFindings(findings: readonly Finding[]): string {
+function applySuppressions(
+  findings: readonly Finding[],
+  directives: readonly SuppressionDirective[]
+): { findings: Finding[]; suppressions: AppliedSuppression[] } {
+  const visibleFindings: Finding[] = [];
+  const suppressions: AppliedSuppression[] = [];
+
+  for (const finding of findings) {
+    const directive = directives.find((candidate) => suppressionMatchesFinding(candidate, finding));
+
+    if (!directive) {
+      visibleFindings.push(finding);
+      continue;
+    }
+
+    suppressions.push({
+      id: createStableId("suppression", [
+        finding.id,
+        directive.source,
+        directive.suppressionPath,
+        directive.suppressionLine?.toString() ?? "",
+        directive.reason
+      ]),
+      findingId: finding.id,
+      ruleId: finding.ruleId,
+      documentPath: finding.documentPath,
+      documentLine: finding.documentLine,
+      reason: directive.reason,
+      source: directive.source,
+      suppressionPath: directive.suppressionPath,
+      ...(directive.suppressionLine === undefined
+        ? {}
+        : { suppressionLine: directive.suppressionLine })
+    });
+  }
+
+  return {
+    findings: visibleFindings,
+    suppressions
+  };
+}
+
+function suppressionMatchesFinding(directive: SuppressionDirective, finding: Finding): boolean {
+  if (directive.ruleId !== "*" && directive.ruleId !== finding.ruleId) {
+    return false;
+  }
+
+  if (directive.source === "inline") {
+    return (
+      directive.documentPath === finding.documentPath &&
+      directive.targetLine === finding.documentLine
+    );
+  }
+
+  return (
+    directive.pathPattern === undefined || globMatches(directive.pathPattern, finding.documentPath)
+  );
+}
+
+async function readSuppressionDirectives(
+  root: string,
+  documents: readonly DocumentFile[],
+  warnings: ScannerWarning[]
+): Promise<SuppressionDirective[]> {
+  return [
+    ...readInlineSuppressionDirectives(documents, warnings),
+    ...(await readConfigSuppressionDirectives(root, warnings))
+  ];
+}
+
+function readInlineSuppressionDirectives(
+  documents: readonly DocumentFile[],
+  warnings: ScannerWarning[]
+): SuppressionDirective[] {
+  const directives: SuppressionDirective[] = [];
+  const marker = /<!--\s*docs-debt-disable-next-line\s+([a-z0-9-*]+)(?::\s*(.*?))?\s*-->/i;
+
+  for (const document of documents) {
+    const lines = document.text.split(/\r?\n/);
+    for (const [index, line] of lines.entries()) {
+      const match = marker.exec(line);
+      if (!match) {
+        continue;
+      }
+
+      const lineNumber = index + 1;
+      const ruleId = match[1] ?? "";
+      const reason = match[2]?.trim() ?? "";
+
+      if (!reason) {
+        warnings.push(
+          createScannerWarning({
+            kind: "invalid_suppression",
+            message: `Inline suppression for ${ruleId} requires a reason.`,
+            path: document.path,
+            lineNumber
+          })
+        );
+        continue;
+      }
+
+      directives.push({
+        ruleId,
+        reason,
+        source: "inline",
+        suppressionPath: document.path,
+        suppressionLine: lineNumber,
+        documentPath: document.path,
+        targetLine: lineNumber + 1
+      });
+    }
+  }
+
+  return directives;
+}
+
+async function readConfigSuppressionDirectives(
+  root: string,
+  warnings: ScannerWarning[]
+): Promise<SuppressionDirective[]> {
+  const configPath = ".docs-debt-radar.json";
+  let rawConfig: string;
+
+  try {
+    rawConfig = await readFile(join(root, configPath), "utf8");
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      return [];
+    }
+
+    warnings.push(
+      createScannerWarning({
+        kind: "file_unreadable",
+        message: error instanceof Error ? error.message : "Unable to read suppression config.",
+        path: configPath
+      })
+    );
+    return [];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripUtf8Bom(rawConfig)) as unknown;
+  } catch (error) {
+    warnings.push(
+      createScannerWarning({
+        kind: "invalid_suppression",
+        message: error instanceof Error ? error.message : "Invalid suppression config JSON.",
+        path: configPath
+      })
+    );
+    return [];
+  }
+
+  const ignoreEntries =
+    isRecord(parsed) && Array.isArray(parsed.ignore) ? (parsed.ignore as unknown[]) : [];
+  const directives: SuppressionDirective[] = [];
+
+  for (const [index, entry] of ignoreEntries.entries()) {
+    if (!isRecord(entry)) {
+      warnings.push(
+        createScannerWarning({
+          kind: "invalid_suppression",
+          message: `Suppression config ignore entry ${index + 1} must be an object.`,
+          path: configPath
+        })
+      );
+      continue;
+    }
+
+    const ruleId = typeof entry.rule === "string" ? entry.rule.trim() : "";
+    const pathPattern = typeof entry.path === "string" ? entry.path.trim() : "";
+    const reason = typeof entry.reason === "string" ? entry.reason.trim() : "";
+
+    if (!ruleId || !pathPattern || !reason) {
+      warnings.push(
+        createScannerWarning({
+          kind: "invalid_suppression",
+          message: `Suppression config ignore entry ${index + 1} requires rule, path, and reason.`,
+          path: configPath
+        })
+      );
+      continue;
+    }
+
+    directives.push({
+      ruleId,
+      reason,
+      source: "config",
+      suppressionPath: configPath,
+      pathPattern: normalizePath(pathPattern).replace(/^\.\//, "")
+    });
+  }
+
+  return directives;
+}
+
+function globMatches(pattern: string, path: string): boolean {
+  const normalizedPattern = normalizePath(pattern).replace(/^\.\//, "");
+  const normalizedPath = normalizePath(path).replace(/^\.\//, "");
+  const doubleStarPlaceholder = "__DOCS_DEBT_DOUBLE_STAR__";
+  const escaped = normalizedPattern
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*\*/g, doubleStarPlaceholder)
+    .replace(/\*/g, "[^/]*")
+    .replaceAll(doubleStarPlaceholder, ".*");
+  return new RegExp(`^${escaped}$`).test(normalizedPath);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stripUtf8Bom(text: string): string {
+  return text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+}
+
+function renderMarkdownFindings(
+  findings: readonly Finding[],
+  suppressions: readonly AppliedSuppression[] = []
+): string {
   if (findings.length === 0) {
-    return "# Docs Debt Report\n\nNo findings.\n";
+    return [
+      "# Docs Debt Report",
+      "",
+      "No findings.",
+      "",
+      `Suppressed findings: ${suppressions.length}`,
+      ""
+    ].join("\n");
   }
 
   return [
     "# Docs Debt Report",
+    "",
+    `Suppressed findings: ${suppressions.length}`,
     "",
     ...[...findings]
       .sort(compareFindings)
@@ -1037,7 +1317,10 @@ async function extractPackageScriptFacts(
   for (const file of files.filter((entry) => basename(entry.path) === "package.json")) {
     try {
       const text = await readFile(join(root, file.path), "utf8");
-      const parsed = JSON.parse(text) as { name?: string; scripts?: Record<string, string> };
+      const parsed = JSON.parse(stripUtf8Bom(text)) as {
+        name?: string;
+        scripts?: Record<string, string>;
+      };
 
       for (const [scriptName, command] of Object.entries(parsed.scripts ?? {})) {
         facts.push(

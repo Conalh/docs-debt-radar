@@ -11,7 +11,7 @@ V1 should prove that documentation drift can be detected with local, evidence-ba
 - Package script validation for common `npm`, `pnpm`, and `yarn` command forms.
 - Env var comparison between docs, env examples, and source references.
 - GitHub Actions workflow command checks for referenced package scripts and files.
-- Route mention validation for Next.js App Router, Next.js Pages Router, FastAPI app/router decorators, Flask decorators, Django URL patterns, literal Express route calls, NestJS controller decorators, Hono route calls, Koa Router calls, Rails route declarations, and Laravel route declarations.
+- Route mention validation for Next.js App Router, Next.js Pages Router, FastAPI app/router decorators, Flask decorators, Django URL patterns, literal Express route calls, NestJS controller decorators, Hono route calls, Koa Router calls, Rails route declarations, Laravel route declarations, and Symfony route attributes.
 - Text, Markdown, and JSON reports.
 - CLI exit codes.
 - GitHub Action report mode and explicit fail thresholds.
@@ -54,6 +54,7 @@ The initial fixture set covers:
 - Koa route drift.
 - Rails route drift.
 - Laravel route drift.
+- Symfony route drift.
 - GitHub Actions workflow script drift.
 - Documentation asset, anchor, and env-var drift.
 

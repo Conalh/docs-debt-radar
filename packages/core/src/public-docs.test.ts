@@ -34,6 +34,7 @@ describe("public documentation", () => {
       "docs/examples/koa.md",
       "docs/examples/rails.md",
       "docs/examples/laravel.md",
+      "docs/examples/symfony.md",
       "docs/examples/github-actions.md"
     ];
 

@@ -201,6 +201,7 @@ Open `apps/web/index.html` and load a JSON report. The viewer is optional; the C
 - [Koa](docs/examples/koa.md)
 - [Rails](docs/examples/rails.md)
 - [Laravel](docs/examples/laravel.md)
+- [Symfony](docs/examples/symfony.md)
 - [GitHub Actions workflow](docs/examples/github-actions.md)
 - [Release readiness](docs/product/release-readiness.md)
 

@@ -67,6 +67,7 @@ const requiredProjectTypes = [
   "koa",
   "rails",
   "laravel",
+  "symfony",
   "github-actions",
   "docs-assets-env"
 ];
@@ -101,7 +102,8 @@ describe("fixture contract", () => {
       "python-django-drift",
       "python-fastapi-drift",
       "python-flask-drift",
-      "rails-route-drift"
+      "rails-route-drift",
+      "symfony-route-drift"
     ]);
 
     for (const projectType of requiredProjectTypes) {

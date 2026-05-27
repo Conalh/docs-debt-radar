@@ -1,0 +1,26 @@
+{
+  "fixtureId": "symfony-route-drift",
+  "summary": {
+    "totalFindings": 1,
+    "bySeverity": {
+      "info": 0,
+      "low": 0,
+      "medium": 1,
+      "high": 0
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "stale-route-mention",
+      "severity": "medium",
+      "documentPath": "README.md",
+      "documentLine": 5,
+      "title": "Documented Symfony route was not found",
+      "evidence": {
+        "claim": "README.md tells users to open `/admin`.",
+        "currentFact": "src/Controller/RouteController.php defines `/health` and `/api/users`, but not `/admin`."
+      },
+      "suggestedAction": "Update the route mention or add the missing Symfony route."
+    }
+  ]
+}

@@ -45,7 +45,8 @@ const fixtureIds = [
   "hono-route-drift",
   "koa-route-drift",
   "rails-route-drift",
-  "laravel-route-drift"
+  "laravel-route-drift",
+  "symfony-route-drift"
 ];
 
 const tempDirs: string[] = [];

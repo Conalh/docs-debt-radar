@@ -1,0 +1,6 @@
+{
+  "name": "docs-debt-radar/symfony-route-drift",
+  "require": {
+    "symfony/routing": "^7.0"
+  }
+}

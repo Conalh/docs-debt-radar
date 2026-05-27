@@ -116,6 +116,14 @@
       "expectedReport": "expected-report.json",
       "coversFailingRules": ["stale-route-mention"],
       "coversPassingRules": ["stale-route-mention"]
+    },
+    {
+      "id": "symfony-route-drift",
+      "description": "A minimal Symfony app with documented existing and stale routes.",
+      "projectTypes": ["symfony"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
     }
   ]
 }

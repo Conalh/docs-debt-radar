@@ -125,7 +125,7 @@ describe("scanRepositoryFacts", () => {
     );
   });
 
-  it("extracts Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, Rails, and Laravel route facts", async () => {
+  it("extracts Next.js, FastAPI, Flask, Django, Express, NestJS, Hono, Koa, Rails, Laravel, and Symfony route facts", async () => {
     const nextResult = await scanRepositoryFacts({ root: fixturePath("nextjs-route-drift") });
     const fastApiResult = await scanRepositoryFacts({ root: fixturePath("python-fastapi-drift") });
     const flaskResult = await scanRepositoryFacts({ root: fixturePath("python-flask-drift") });
@@ -136,6 +136,7 @@ describe("scanRepositoryFacts", () => {
     const koaResult = await scanRepositoryFacts({ root: fixturePath("koa-route-drift") });
     const railsResult = await scanRepositoryFacts({ root: fixturePath("rails-route-drift") });
     const laravelResult = await scanRepositoryFacts({ root: fixturePath("laravel-route-drift") });
+    const symfonyResult = await scanRepositoryFacts({ root: fixturePath("symfony-route-drift") });
 
     expect(
       nextResult.facts.map((fact) => ({
@@ -417,6 +418,33 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "routes/web.php",
           lineNumber: 8,
           metadataJson: { framework: "laravel", method: "post" }
+        }
+      ])
+    );
+
+    expect(
+      symfonyResult.facts.map((fact) => ({
+        kind: fact.kind,
+        value: fact.value,
+        sourcePath: fact.sourcePath,
+        lineNumber: fact.lineNumber,
+        metadataJson: fact.metadataJson
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          kind: "route_exists",
+          value: "/health",
+          sourcePath: "src/Controller/RouteController.php",
+          lineNumber: 9,
+          metadataJson: { framework: "symfony", method: "get" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users",
+          sourcePath: "src/Controller/RouteController.php",
+          lineNumber: 16,
+          metadataJson: { framework: "symfony", method: "post" }
         }
       ])
     );

@@ -1084,6 +1084,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isKoa = routeFacts.some((fact) => fact.metadataJson.framework === "koa");
   const isRails = routeFacts.some((fact) => fact.metadataJson.framework === "rails");
   const isLaravel = routeFacts.some((fact) => fact.metadataJson.framework === "laravel");
+  const isSymfony = routeFacts.some((fact) => fact.metadataJson.framework === "symfony");
   const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
@@ -1104,6 +1105,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isKoa,
           isRails,
           isLaravel,
+          isSymfony,
           isNextJs
         }),
         body: evidenceBody(
@@ -1118,7 +1120,8 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
             isHono ||
             isKoa ||
             isRails ||
-            isLaravel
+            isLaravel ||
+            isSymfony
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1137,6 +1140,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isKoa,
           isRails,
           isLaravel,
+          isSymfony,
           isNextJs
         }),
         falsePositiveNote:
@@ -1155,6 +1159,7 @@ function routeMissingTitle(input: {
   isKoa: boolean;
   isRails: boolean;
   isLaravel: boolean;
+  isSymfony: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1193,6 +1198,10 @@ function routeMissingTitle(input: {
     return "Documented Laravel route was not found";
   }
 
+  if (input.isSymfony) {
+    return "Documented Symfony route was not found";
+  }
+
   if (input.isNextJs) {
     return "Documented Next.js route was not found";
   }
@@ -1211,6 +1220,7 @@ function routeMissingSuggestion(input: {
   isKoa: boolean;
   isRails: boolean;
   isLaravel: boolean;
+  isSymfony: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1247,6 +1257,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isLaravel) {
     return "Update the route mention or add the missing Laravel route.";
+  }
+
+  if (input.isSymfony) {
+    return "Update the route mention or add the missing Symfony route.";
   }
 
   if (input.isNextJs) {
@@ -1983,20 +1997,37 @@ async function extractRouteFacts(
 
     if (extname(file.path).toLowerCase() === ".php") {
       const text = await readTextForFact(root, file.path, warnings);
-      if (text === undefined || !looksLikeLaravelRoutes(text)) {
+      if (text === undefined) {
         continue;
       }
 
-      for (const route of extractLaravelRoutes(text)) {
-        facts.push(
-          createCodeFact({
-            kind: "route_exists",
-            value: route.path,
-            sourcePath: file.path,
-            lineNumber: route.lineNumber,
-            metadata: { framework: "laravel", method: route.method }
-          })
-        );
+      if (looksLikeSymfonyRoutes(text)) {
+        for (const route of extractSymfonyRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "symfony", method: route.method }
+            })
+          );
+        }
+        continue;
+      }
+
+      if (looksLikeLaravelRoutes(text)) {
+        for (const route of extractLaravelRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "laravel", method: route.method }
+            })
+          );
+        }
       }
       continue;
     }
@@ -2504,6 +2535,89 @@ function extractRailsRoutes(
   }
 
   return routes;
+}
+
+function looksLikeSymfonyRoutes(text: string): boolean {
+  return /\bSymfony\\Component\\Routing\\(?:Attribute|Annotation)\\Route\b|#\[\s*Route\(/.test(
+    text
+  );
+}
+
+function extractSymfonyRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  let classPrefix = "";
+  let pendingRoute: { method: string; path: string; lineNumber: number } | undefined;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    const lineNumber = lineIndex + 1;
+    const route = parseSymfonyRouteAttribute(line, lineNumber);
+    if (route) {
+      pendingRoute = route;
+
+      if (/\bclass\s+\w+/.test(line)) {
+        classPrefix = route.path;
+        pendingRoute = undefined;
+      } else if (/\bfunction\s+\w+\s*\(/.test(line)) {
+        routes.push({
+          method: route.method,
+          path: combineRouteParts(classPrefix, route.path),
+          lineNumber: route.lineNumber
+        });
+        pendingRoute = undefined;
+      }
+      continue;
+    }
+
+    if (!pendingRoute) {
+      if (/\bclass\s+\w+/.test(line)) {
+        classPrefix = "";
+      }
+      continue;
+    }
+
+    if (/\bclass\s+\w+/.test(line)) {
+      classPrefix = pendingRoute.path;
+      pendingRoute = undefined;
+      continue;
+    }
+
+    if (/\bfunction\s+\w+\s*\(/.test(line)) {
+      routes.push({
+        method: pendingRoute.method,
+        path: combineRouteParts(classPrefix, pendingRoute.path),
+        lineNumber: pendingRoute.lineNumber
+      });
+      pendingRoute = undefined;
+    }
+  }
+
+  return routes;
+}
+
+function parseSymfonyRouteAttribute(
+  line: string,
+  lineNumber: number
+): { method: string; path: string; lineNumber: number } | undefined {
+  const routeMatch = /#\[\s*Route\(\s*(?:(?:path\s*:\s*)?["']([^"']+)["'])/.exec(line);
+  if (!routeMatch?.[1]) {
+    return undefined;
+  }
+
+  return {
+    method: extractSymfonyRouteMethod(line),
+    path: routeMatch[1],
+    lineNumber
+  };
+}
+
+function extractSymfonyRouteMethod(line: string): string {
+  const methodMatch =
+    /methods\s*:\s*\[\s*["']([A-Za-z]+)["']/.exec(line) ??
+    /methods\s*:\s*["']([A-Za-z]+)["']/.exec(line);
+
+  return methodMatch?.[1]?.toLowerCase() ?? "route";
 }
 
 function looksLikeLaravelRoutes(text: string): boolean {

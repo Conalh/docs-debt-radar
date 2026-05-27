@@ -1,0 +1,304 @@
+{
+  "id": "scan_1v4kg07",
+  "repoRoot": "tests/fixtures/basic-node-drift",
+  "scannedAt": "2026-05-27T04:21:20.453Z",
+  "scannerVersion": "0.0.0",
+  "config": {
+    "root": "tests/fixtures/basic-node-drift",
+    "docsGlobs": ["README.md", "docs/**/*.md"],
+    "ignoreGlobs": ["node_modules/**", "dist/**", "coverage/**"],
+    "changedOnly": false,
+    "failOn": "none",
+    "outputFormat": "json",
+    "maxFileSizeBytes": 1000000
+  },
+  "summaryJson": {
+    "totalFindings": 2,
+    "bySeverity": {
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "info": 0
+    },
+    "suppressedFindingCount": 0,
+    "warningCount": 0,
+    "scannedDocumentCount": 2,
+    "claimCount": 5,
+    "factCount": 12
+  },
+  "documentsJson": [
+    {
+      "id": "document_auwzly",
+      "path": "docs/setup.md",
+      "kind": "docs",
+      "text": "# Setup\n\nThis existing file proves that relative docs links can pass.\n",
+      "headings": [
+        {
+          "text": "Setup",
+          "anchor": "setup",
+          "lineNumber": 1
+        }
+      ],
+      "links": [],
+      "codeBlocks": [],
+      "inlineCode": []
+    },
+    {
+      "id": "document_19s4riz",
+      "path": "README.md",
+      "kind": "readme",
+      "text": "# Basic Node Drift\n\n## Setup\n\nRun `npm install`.\nRun `npm run dev` to start local development.\nRun `npm run test:e2e` before opening a pull request.\n\nSee [the setup guide](docs/setup.md).\nSee [missing CLI reference](docs/cli.md).\n",
+      "headings": [
+        {
+          "text": "Basic Node Drift",
+          "anchor": "basic-node-drift",
+          "lineNumber": 1
+        },
+        {
+          "text": "Setup",
+          "anchor": "setup",
+          "lineNumber": 3
+        }
+      ],
+      "links": [
+        {
+          "label": "the setup guide",
+          "target": "docs/setup.md",
+          "isImage": false,
+          "lineNumber": 9
+        },
+        {
+          "label": "missing CLI reference",
+          "target": "docs/cli.md",
+          "isImage": false,
+          "lineNumber": 10
+        }
+      ],
+      "codeBlocks": [],
+      "inlineCode": [
+        {
+          "text": "npm install",
+          "lineNumber": 5
+        },
+        {
+          "text": "npm run dev",
+          "lineNumber": 6
+        },
+        {
+          "text": "npm run test:e2e",
+          "lineNumber": 7
+        }
+      ]
+    }
+  ],
+  "claimsJson": [
+    {
+      "id": "claim_1fvk5bj",
+      "documentPath": "README.md",
+      "lineNumber": 5,
+      "kind": "command",
+      "rawText": "npm install",
+      "normalizedValue": "npm install",
+      "context": "npm install",
+      "confidence": "high"
+    },
+    {
+      "id": "claim_ysk8fw",
+      "documentPath": "README.md",
+      "lineNumber": 6,
+      "kind": "package_script",
+      "rawText": "npm run dev",
+      "normalizedValue": "dev",
+      "context": "npm run dev",
+      "confidence": "high"
+    },
+    {
+      "id": "claim_k25qke",
+      "documentPath": "README.md",
+      "lineNumber": 7,
+      "kind": "package_script",
+      "rawText": "npm run test:e2e",
+      "normalizedValue": "test:e2e",
+      "context": "npm run test:e2e",
+      "confidence": "high"
+    },
+    {
+      "id": "claim_cz8v8a",
+      "documentPath": "README.md",
+      "lineNumber": 9,
+      "kind": "file_ref",
+      "rawText": "docs/setup.md",
+      "normalizedValue": "docs/setup.md",
+      "context": "the setup guide",
+      "confidence": "high"
+    },
+    {
+      "id": "claim_122c5j3",
+      "documentPath": "README.md",
+      "lineNumber": 10,
+      "kind": "file_ref",
+      "rawText": "docs/cli.md",
+      "normalizedValue": "docs/cli.md",
+      "context": "missing CLI reference",
+      "confidence": "high"
+    }
+  ],
+  "factsJson": [
+    {
+      "id": "fact_vly9l7",
+      "kind": "config_key",
+      "value": "docs/setup.md#setup",
+      "sourcePath": "docs/setup.md",
+      "lineNumber": 1,
+      "metadataJson": {
+        "configType": "markdown_anchor",
+        "heading": "Setup"
+      }
+    },
+    {
+      "id": "fact_1vp7vkh",
+      "kind": "config_key",
+      "value": "README.md#basic-node-drift",
+      "sourcePath": "README.md",
+      "lineNumber": 1,
+      "metadataJson": {
+        "configType": "markdown_anchor",
+        "heading": "Basic Node Drift"
+      }
+    },
+    {
+      "id": "fact_122l1yt",
+      "kind": "config_key",
+      "value": "README.md#setup",
+      "sourcePath": "README.md",
+      "lineNumber": 3,
+      "metadataJson": {
+        "configType": "markdown_anchor",
+        "heading": "Setup"
+      }
+    },
+    {
+      "id": "fact_1lgrcdm",
+      "kind": "file_exists",
+      "value": "docs",
+      "sourcePath": "docs",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "directory"
+      }
+    },
+    {
+      "id": "fact_q9nb9y",
+      "kind": "file_exists",
+      "value": "docs/setup.md",
+      "sourcePath": "docs/setup.md",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "file"
+      }
+    },
+    {
+      "id": "fact_122etui",
+      "kind": "file_exists",
+      "value": "expected-report.json",
+      "sourcePath": "expected-report.json",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "file"
+      }
+    },
+    {
+      "id": "fact_9sqhvc",
+      "kind": "file_exists",
+      "value": "package.json",
+      "sourcePath": "package.json",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "file"
+      }
+    },
+    {
+      "id": "fact_11yi7qi",
+      "kind": "file_exists",
+      "value": "README.md",
+      "sourcePath": "README.md",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "file"
+      }
+    },
+    {
+      "id": "fact_1uduska",
+      "kind": "file_exists",
+      "value": "src",
+      "sourcePath": "src",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "directory"
+      }
+    },
+    {
+      "id": "fact_1rols6o",
+      "kind": "file_exists",
+      "value": "src/index.js",
+      "sourcePath": "src/index.js",
+      "lineNumber": 1,
+      "metadataJson": {
+        "entryType": "file"
+      }
+    },
+    {
+      "id": "fact_nseju6",
+      "kind": "package_script",
+      "value": "dev",
+      "sourcePath": "package.json",
+      "lineNumber": 5,
+      "metadataJson": {
+        "packageName": "basic-node-drift",
+        "command": "node src/index.js"
+      }
+    },
+    {
+      "id": "fact_rmqage",
+      "kind": "package_script",
+      "value": "test",
+      "sourcePath": "package.json",
+      "lineNumber": 6,
+      "metadataJson": {
+        "packageName": "basic-node-drift",
+        "command": "node --test"
+      }
+    }
+  ],
+  "findingsJson": [
+    {
+      "id": "finding_v12of6",
+      "ruleId": "missing-package-script",
+      "severity": "high",
+      "title": "Documented package script does not exist",
+      "body": "Claim: README.md says to run `npm run test:e2e`.\nCurrent fact: package.json defines scripts `dev` and `test`, but not `test:e2e`.",
+      "documentPath": "README.md",
+      "documentLine": 7,
+      "claimId": "claim_k25qke",
+      "relatedFactIds": ["fact_nseju6", "fact_rmqage"],
+      "suggestedEdit": "Update the README command or add a `test:e2e` script to package.json.",
+      "falsePositiveNote": "A script may exist in another workspace package that is outside the scan scope."
+    },
+    {
+      "id": "finding_1vky21h",
+      "ruleId": "missing-referenced-file",
+      "severity": "medium",
+      "title": "Documented relative file path does not exist",
+      "body": "Claim: README.md links to `docs/cli.md`.\nCurrent fact: `docs/cli.md` is not present in the fixture file tree.",
+      "documentPath": "README.md",
+      "documentLine": 10,
+      "claimId": "claim_122c5j3",
+      "relatedFactIds": [],
+      "suggestedEdit": "Create docs/cli.md or remove the stale link from README.md.",
+      "falsePositiveNote": "The referenced path may be generated or supplied outside the repository."
+    }
+  ],
+  "suppressionsJson": [],
+  "warningsJson": [],
+  "markdown": "# Docs Debt Report\n\nSuppressed findings: 0\n\n## HIGH: Documented package script does not exist\n\nREADME.md:7\n\nClaim: README.md says to run `npm run test:e2e`.\nCurrent fact: package.json defines scripts `dev` and `test`, but not `test:e2e`.\n\nSuggested edit: Update the README command or add a `test:e2e` script to package.json.\n\n## MEDIUM: Documented relative file path does not exist\n\nREADME.md:10\n\nClaim: README.md links to `docs/cli.md`.\nCurrent fact: `docs/cli.md` is not present in the fixture file tree.\n\nSuggested edit: Create docs/cli.md or remove the stale link from README.md.\n"
+}

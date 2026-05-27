@@ -19,3 +19,4 @@ All notable changes to Docs Debt Radar will be documented here.
 - Added CLI report formats, `--write-report`, `--fail-on`, `list-rules`, and `explain <rule-id>`.
 - Added inline and config-file suppressions with required reasons and report counts.
 - Added the GitHub Action wrapper, job summary output, report artifact upload, and workflow examples.
+- Reworked the public README and added demo reports, configuration docs, rule docs, and project-shape examples.

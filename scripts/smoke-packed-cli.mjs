@@ -33,11 +33,19 @@ try {
   );
 
   run("npm", ["install", "--ignore-scripts"], { cwd: tempRoot });
-  const smoke = run(
-    "npm",
-    ["exec", "--", "docs-debt-radar", "scan", fixturePath, "--format", "json"],
-    { cwd: tempRoot, silent: true }
-  );
+
+  // Invoke the installed CLI entry directly with node rather than via npm exec.
+  // Linux CI has resolved the bin with exit 0 but empty stdout, which makes the
+  // JSON smoke fail without proving whether the packed CLI can scan.
+  const cliEntry = resolve(tempRoot, "node_modules", "@docs-debt-radar", "cli", "dist", "index.js");
+  const smoke = run(process.execPath, [cliEntry, "scan", fixturePath, "--format", "json"], {
+    cwd: tempRoot,
+    silent: true
+  });
+
+  if (!smoke.stdout.trim()) {
+    throw new Error("Packed CLI smoke produced no stdout to parse as JSON");
+  }
   const report = JSON.parse(smoke.stdout);
 
   if (report.summaryJson.totalFindings !== 2) {

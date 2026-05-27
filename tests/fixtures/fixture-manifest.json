@@ -1,0 +1,57 @@
+{
+  "fixtures": [
+    {
+      "id": "basic-node-drift",
+      "description": "A small Node package with one stale npm script and one missing docs file reference.",
+      "projectTypes": ["node"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["missing-referenced-file", "missing-package-script"],
+      "coversPassingRules": ["missing-referenced-file", "missing-package-script"]
+    },
+    {
+      "id": "docs-assets-env-drift",
+      "description": "A documentation-heavy repo with anchor, screenshot, and env-var drift.",
+      "projectTypes": ["docs-assets-env"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": [
+        "broken-markdown-anchor",
+        "missing-screenshot",
+        "env-var-not-documented"
+      ],
+      "coversPassingRules": [
+        "broken-markdown-anchor",
+        "missing-screenshot",
+        "env-var-not-documented",
+        "documented-env-var-not-used"
+      ]
+    },
+    {
+      "id": "github-actions-drift",
+      "description": "A repo whose workflow references one package script that does not exist.",
+      "projectTypes": ["github-actions"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["workflow-references-missing-script"],
+      "coversPassingRules": ["workflow-references-missing-script", "missing-package-script"]
+    },
+    {
+      "id": "nextjs-route-drift",
+      "description": "A minimal Next.js app with documented existing and stale routes.",
+      "projectTypes": ["nextjs"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
+    },
+    {
+      "id": "python-fastapi-drift",
+      "description": "A minimal FastAPI app with route and environment documentation drift.",
+      "projectTypes": ["fastapi"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["documented-env-var-not-used", "stale-route-mention"],
+      "coversPassingRules": [
+        "documented-env-var-not-used",
+        "env-var-not-documented",
+        "stale-route-mention"
+      ]
+    }
+  ]
+}

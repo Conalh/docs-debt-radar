@@ -1,0 +1,50 @@
+{
+  "fixtureId": "docs-assets-env-drift",
+  "summary": {
+    "totalFindings": 3,
+    "bySeverity": {
+      "info": 0,
+      "low": 0,
+      "medium": 2,
+      "high": 1
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "broken-markdown-anchor",
+      "severity": "medium",
+      "documentPath": "README.md",
+      "documentLine": 4,
+      "title": "Markdown link points to a missing heading anchor",
+      "evidence": {
+        "claim": "README.md links to `docs/guide.md#install`.",
+        "currentFact": "`docs/guide.md` exists, but it only defines the `#guide` and `#usage` anchors."
+      },
+      "suggestedAction": "Change the link to an existing heading or add an `Install` heading to docs/guide.md."
+    },
+    {
+      "ruleId": "missing-screenshot",
+      "severity": "medium",
+      "documentPath": "README.md",
+      "documentLine": 7,
+      "title": "Documented image path does not exist",
+      "evidence": {
+        "claim": "README.md references `docs/images/missing-flow.png`.",
+        "currentFact": "`docs/images/missing-flow.png` is not present in the fixture file tree."
+      },
+      "suggestedAction": "Add the missing image or remove the stale screenshot reference."
+    },
+    {
+      "ruleId": "env-var-not-documented",
+      "severity": "high",
+      "documentPath": "src/config.ts",
+      "documentLine": 2,
+      "title": "Source env var is not documented",
+      "evidence": {
+        "claim": "Source code reads `STRIPE_API_KEY`.",
+        "currentFact": "README.md and .env.example document `PUBLIC_API_URL`, but not `STRIPE_API_KEY`."
+      },
+      "suggestedAction": "Document STRIPE_API_KEY in setup docs or .env.example, or remove the unused source reference."
+    }
+  ]
+}

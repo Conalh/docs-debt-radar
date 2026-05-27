@@ -1,0 +1,6 @@
+[project]
+name = "python-fastapi-drift"
+version = "0.0.0"
+
+[project.optional-dependencies]
+dev = ["fastapi", "uvicorn"]

@@ -1,0 +1,38 @@
+{
+  "fixtureId": "basic-node-drift",
+  "summary": {
+    "totalFindings": 2,
+    "bySeverity": {
+      "info": 0,
+      "low": 0,
+      "medium": 1,
+      "high": 1
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "missing-package-script",
+      "severity": "high",
+      "documentPath": "README.md",
+      "documentLine": 7,
+      "title": "Documented package script does not exist",
+      "evidence": {
+        "claim": "README.md says to run `npm run test:e2e`.",
+        "currentFact": "package.json defines scripts `dev` and `test`, but not `test:e2e`."
+      },
+      "suggestedAction": "Update the README command or add a `test:e2e` script to package.json."
+    },
+    {
+      "ruleId": "missing-referenced-file",
+      "severity": "medium",
+      "documentPath": "README.md",
+      "documentLine": 10,
+      "title": "Documented relative file path does not exist",
+      "evidence": {
+        "claim": "README.md links to `docs/cli.md`.",
+        "currentFact": "`docs/cli.md` is not present in the fixture file tree."
+      },
+      "suggestedAction": "Create docs/cli.md or remove the stale link from README.md."
+    }
+  ]
+}

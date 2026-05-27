@@ -1,0 +1,26 @@
+{
+  "fixtureId": "github-actions-drift",
+  "summary": {
+    "totalFindings": 1,
+    "bySeverity": {
+      "info": 0,
+      "low": 0,
+      "medium": 0,
+      "high": 1
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "workflow-references-missing-script",
+      "severity": "high",
+      "documentPath": ".github/workflows/ci.yml",
+      "documentLine": 12,
+      "title": "Workflow references a package script that does not exist",
+      "evidence": {
+        "claim": "The CI workflow runs `npm run lint:ci`.",
+        "currentFact": "package.json defines scripts `build` and `test`, but not `lint:ci`."
+      },
+      "suggestedAction": "Change the workflow command or add a `lint:ci` script to package.json."
+    }
+  ]
+}

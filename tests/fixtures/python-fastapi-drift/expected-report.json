@@ -1,0 +1,38 @@
+{
+  "fixtureId": "python-fastapi-drift",
+  "summary": {
+    "totalFindings": 2,
+    "bySeverity": {
+      "info": 0,
+      "low": 1,
+      "medium": 1,
+      "high": 0
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "stale-route-mention",
+      "severity": "medium",
+      "documentPath": "README.md",
+      "documentLine": 5,
+      "title": "Documented FastAPI route was not found",
+      "evidence": {
+        "claim": "README.md documents endpoint `/api/users`.",
+        "currentFact": "app/main.py defines `/health`, but not `/api/users`."
+      },
+      "suggestedAction": "Update the API docs or add the missing FastAPI route."
+    },
+    {
+      "ruleId": "documented-env-var-not-used",
+      "severity": "low",
+      "documentPath": "README.md",
+      "documentLine": 8,
+      "title": "Documented env var is not referenced by source",
+      "evidence": {
+        "claim": "README.md tells users to set `LEGACY_FLAG`.",
+        "currentFact": "The fixture source and .env.example reference `DATABASE_URL`, but not `LEGACY_FLAG`."
+      },
+      "suggestedAction": "Remove LEGACY_FLAG from setup docs or add the source/config reference that uses it."
+    }
+  ]
+}

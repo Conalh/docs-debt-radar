@@ -1,0 +1,8 @@
+{
+  "name": "basic-node-drift",
+  "private": true,
+  "scripts": {
+    "dev": "node src/index.js",
+    "test": "node --test"
+  }
+}

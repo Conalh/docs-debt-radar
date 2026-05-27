@@ -1,0 +1,17 @@
+{
+  "name": "@docs-debt-radar/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "docs-debt-radar": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "typecheck": "pnpm --filter @docs-debt-radar/core build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@docs-debt-radar/core": "workspace:*"
+  }
+}

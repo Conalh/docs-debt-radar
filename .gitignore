@@ -1,0 +1,30 @@
+# Local planning notes
+PLAN.md
+ROADMAP.md
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

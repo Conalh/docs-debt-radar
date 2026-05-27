@@ -463,13 +463,24 @@ describe("createCliHelp", () => {
     const explainResult = await runCli(["explain", "missing-package-script"]);
 
     expect(listResult.exitCode).toBe(0);
+    expect(listResult.stdout).toContain("Docs Debt Radar Rules");
+    expect(listResult.stdout).toContain("9 rules available.");
+    expect(listResult.stdout).toContain("HIGH");
     expect(listResult.stdout).toContain("missing-package-script");
     expect(listResult.stdout).toContain("workflow-references-missing-script");
+    expect(listResult.stdout).toContain("Use `docs-debt-radar explain <rule-id>` for details.");
     expect(listResult.stderr).toBe("");
 
     expect(explainResult.exitCode).toBe(0);
-    expect(explainResult.stdout).toContain("# missing-package-script");
+    expect(explainResult.stdout).toContain("Docs Debt Radar Rule");
+    expect(explainResult.stdout).toContain("Rule: missing-package-script");
     expect(explainResult.stdout).toContain("Documented package script does not exist");
+    expect(explainResult.stdout).toContain("Severity: high");
+    expect(explainResult.stdout).toContain("What it checks:");
+    expect(explainResult.stdout).toContain(
+      "Flags documented npm, pnpm, or yarn scripts that are missing from package.json."
+    );
+    expect(explainResult.stdout).toContain("False-positive note:");
     expect(explainResult.stderr).toBe("");
   });
 });

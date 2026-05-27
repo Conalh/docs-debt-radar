@@ -59,7 +59,7 @@ export async function runCli(args: string[]): Promise<CliResult> {
   if (command === "list-rules") {
     return {
       exitCode: 0,
-      stdout: `${V1_RULES.map((rule) => `${rule.id}\t${rule.severity}\t${rule.title}`).join("\n")}\n`,
+      stdout: renderRuleList(),
       stderr: ""
     };
   }
@@ -78,18 +78,7 @@ export async function runCli(args: string[]): Promise<CliResult> {
 
     return {
       exitCode: 0,
-      stdout: [
-        `# ${rule.id}`,
-        "",
-        rule.title,
-        "",
-        `Default severity: ${rule.severity}`,
-        "",
-        rule.description,
-        "",
-        `False-positive note: ${rule.falsePositiveNote}`,
-        ""
-      ].join("\n"),
+      stdout: renderRuleExplanation(rule),
       stderr: ""
     };
   }
@@ -167,6 +156,50 @@ export async function runCli(args: string[]): Promise<CliResult> {
     stdout: rendered,
     stderr: ""
   };
+}
+
+function renderRuleList(): string {
+  const lines = [
+    "Docs Debt Radar Rules",
+    "",
+    `${V1_RULES.length} rules available.`,
+    "Use `docs-debt-radar explain <rule-id>` for details.",
+    ""
+  ];
+
+  for (const severity of ["high", "medium", "low", "info"] satisfies Severity[]) {
+    const rules = V1_RULES.filter((rule) => rule.severity === severity);
+    if (rules.length === 0) {
+      continue;
+    }
+
+    lines.push(severity.toUpperCase());
+    lines.push(...rules.flatMap((rule) => [`  ${rule.id}`, `    ${rule.title}`]), "");
+  }
+
+  return lines.join("\n");
+}
+
+function renderRuleExplanation(rule: (typeof V1_RULES)[number]): string {
+  return [
+    "Docs Debt Radar Rule",
+    "",
+    `Rule: ${rule.id}`,
+    rule.title,
+    "",
+    `Severity: ${rule.severity}`,
+    "",
+    "What it checks:",
+    `  ${rule.description}`,
+    "",
+    "False-positive note:",
+    `  ${rule.falsePositiveNote}`,
+    "",
+    "Try:",
+    `  docs-debt-radar scan . --fail-on ${rule.severity}`,
+    `  docs-debt-radar explain ${rule.id}`,
+    ""
+  ].join("\n");
 }
 
 function renderResult(

@@ -11,7 +11,8 @@ npm install -D @docs-debt-radar/cli
 ## Use
 
 ```bash
-npx docs-debt-radar scan . --format markdown
+npx docs-debt-radar scan .
+npx docs-debt-radar scan . --format markdown --write-report docs-debt-report.md
 npx docs-debt-radar scan . --changed-since origin/main
 npx docs-debt-radar scan . --format patch
 npx docs-debt-radar scan . --format agent

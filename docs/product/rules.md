@@ -26,13 +26,18 @@ docs-debt-radar explain missing-package-script
 Example explanation:
 
 ```text
-# missing-package-script
+Docs Debt Radar Rule
 
+Rule: missing-package-script
 Documented package script does not exist
 
-Default severity: high
+Severity: high
 
-Flags documented npm, pnpm, or yarn scripts that are missing from package.json.
+What it checks:
+  Flags documented npm, pnpm, or yarn scripts that are missing from package.json.
+
+False-positive note:
+  A script may exist in another workspace package that is outside the scan scope.
 ```
 
 ## Severity Guidance

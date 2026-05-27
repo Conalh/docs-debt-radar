@@ -268,14 +268,14 @@ describe("scanRepositoryFacts", () => {
           kind: "route_exists",
           value: "/health",
           sourcePath: "src/server.js",
-          lineNumber: 5,
+          lineNumber: 6,
           metadataJson: { framework: "express", method: "get" }
         },
         {
           kind: "route_exists",
           value: "/api/users",
           sourcePath: "src/server.js",
-          lineNumber: 9,
+          lineNumber: 10,
           metadataJson: { framework: "express", method: "post" }
         }
       ])

@@ -2105,18 +2105,55 @@ function extractExpressRoutes(
   text: string
 ): Array<{ method: string; path: string; lineNumber: number }> {
   const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const routerPrefixes = extractExpressRouterPrefixes(text);
   const routePattern =
-    /\b(?:app|router)\.(get|post|put|patch|delete|options|head|all|use)\(\s*["'`]([^"'`]+)["'`]/g;
+    /\b(\w+)\.(get|post|put|patch|delete|options|head|all|use)\(\s*["'`]([^"'`]+)["'`]\s*(?:,\s*(\w+))?/g;
 
   for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
     routePattern.lastIndex = 0;
     const match = routePattern.exec(line);
-    if (match?.[1] && match[2]) {
-      routes.push({ method: match[1], path: match[2], lineNumber: lineIndex + 1 });
+    if (match?.[1] && match[2] && match[3]) {
+      const [, receiver, method, path, mountedRouter] = match;
+      if (method === "use" && mountedRouter && routerPrefixes.has(mountedRouter)) {
+        continue;
+      }
+
+      if (receiver === "app" || receiver === "router" || routerPrefixes.has(receiver)) {
+        routes.push({
+          method,
+          path: combineRouteParts(routerPrefixes.get(receiver) ?? "", path),
+          lineNumber: lineIndex + 1
+        });
+      }
     }
   }
 
   return routes;
+}
+
+function extractExpressRouterPrefixes(text: string): Map<string, string> {
+  const routerNames = new Set<string>();
+  const prefixes = new Map<string, string>();
+  const routerPattern = /\b(?:const|let|var)\s+(\w+)\s*=\s*express\.Router\(\s*\)/g;
+  const mountPattern = /\bapp\.use\(\s*["'`]([^"'`]+)["'`]\s*,\s*(\w+)/g;
+
+  for (const line of text.split(/\r?\n/)) {
+    routerPattern.lastIndex = 0;
+    const routerMatch = routerPattern.exec(line);
+    if (routerMatch?.[1]) {
+      routerNames.add(routerMatch[1]);
+    }
+  }
+
+  for (const line of text.split(/\r?\n/)) {
+    mountPattern.lastIndex = 0;
+    const mountMatch = mountPattern.exec(line);
+    if (mountMatch?.[1] && mountMatch[2] && routerNames.has(mountMatch[2])) {
+      prefixes.set(mountMatch[2], mountMatch[1]);
+    }
+  }
+
+  return prefixes;
 }
 
 function extractWorkflowRunCommands(text: string): Array<{ command: string; lineNumber: number }> {

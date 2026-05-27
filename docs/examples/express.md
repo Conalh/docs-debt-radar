@@ -1,6 +1,6 @@
 # Express Example
 
-Docs Debt Radar detects route facts from common Express app and router calls with literal paths.
+Docs Debt Radar detects route facts from common Express app and mounted router calls with literal paths.
 
 ## Scan
 
@@ -20,7 +20,9 @@ The route extractor handles literal calls such as:
 
 ```js
 app.get("/health", handler);
-router.post("/api/users", handler);
+const api = express.Router();
+api.post("/users", handler);
+app.use("/api", api);
 ```
 
 Dynamic route registration and middleware-generated routes should use suppressions with reasons until a dedicated extractor can prove them safely.

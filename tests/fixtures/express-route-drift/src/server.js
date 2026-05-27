@@ -1,13 +1,16 @@
 import express from "express";
 
 const app = express();
+const api = express.Router();
 
 app.get("/health", (_request, response) => {
   response.json({ ok: true });
 });
 
-app.post("/api/users", (_request, response) => {
+api.post("/users", (_request, response) => {
   response.status(201).end();
 });
+
+app.use("/api", api);
 
 export { app };

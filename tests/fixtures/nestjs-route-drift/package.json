@@ -1,0 +1,10 @@
+{
+  "name": "nestjs-route-drift",
+  "private": true,
+  "scripts": {
+    "test": "echo test"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0"
+  }
+}

@@ -62,6 +62,7 @@ const requiredProjectTypes = [
   "flask",
   "django",
   "express",
+  "nestjs",
   "github-actions",
   "docs-assets-env"
 ];
@@ -88,6 +89,7 @@ describe("fixture contract", () => {
       "docs-assets-env-drift",
       "express-route-drift",
       "github-actions-drift",
+      "nestjs-route-drift",
       "nextjs-route-drift",
       "python-django-drift",
       "python-fastapi-drift",

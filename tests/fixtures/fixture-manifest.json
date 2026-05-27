@@ -76,6 +76,14 @@
       "expectedReport": "expected-report.json",
       "coversFailingRules": ["stale-route-mention"],
       "coversPassingRules": ["stale-route-mention"]
+    },
+    {
+      "id": "nestjs-route-drift",
+      "description": "A minimal NestJS app with documented existing and stale routes.",
+      "projectTypes": ["nestjs"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
     }
   ]
 }

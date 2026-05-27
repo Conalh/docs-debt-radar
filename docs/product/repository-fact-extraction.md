@@ -10,7 +10,7 @@ Goal 4 adds the scanner side that reads the current repository state and emits f
 - `config_key` for Markdown heading anchors.
 - `package_script` for scripts in `package.json` files.
 - `env_var_declared` for `.env.example` entries and source references.
-- `route_exists` for Next.js App Router and Pages Router routes, FastAPI app/router decorators, Flask decorators and literal blueprint prefixes, Django URL patterns, and literal Express route and mounted router calls.
+- `route_exists` for Next.js App Router and Pages Router routes, FastAPI app/router decorators, Flask decorators and literal blueprint prefixes, Django URL patterns, literal Express route and mounted router calls, and NestJS controller decorators.
 - `workflow_exists` for GitHub Actions workflow names.
 - `command_surface` for GitHub Actions `run:` commands.
 
@@ -22,7 +22,7 @@ The extractor intentionally stays local and conservative:
 - It does not import application code.
 - It ignores `.git`, `node_modules`, `dist`, and `coverage`.
 - It scans common source extensions for env references.
-- It uses simple App Router and Pages Router file conventions for Next.js, decorator patterns for FastAPI apps and routers, Flask decorators with literal `url_prefix` blueprint support, literal Django `path("route/")` URL patterns, and literal `app.get("/path")` / mounted `express.Router()` patterns for Express.
+- It uses simple App Router and Pages Router file conventions for Next.js, decorator patterns for FastAPI apps and routers, Flask decorators with literal `url_prefix` blueprint support, literal Django `path("route/")` URL patterns, literal `app.get("/path")` / mounted `express.Router()` patterns for Express, and literal NestJS `@Controller()` / method decorator pairs.
 
 ## CLI Smoke
 

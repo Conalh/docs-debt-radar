@@ -1069,6 +1069,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const isFlask = routeFacts.some((fact) => fact.metadataJson.framework === "flask");
   const isDjango = routeFacts.some((fact) => fact.metadataJson.framework === "django");
   const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
+  const isNestJs = routeFacts.some((fact) => fact.metadataJson.framework === "nestjs");
   const isNextJs = routeFacts.some((fact) => fact.metadataJson.framework === "nextjs");
 
   return claims
@@ -1079,12 +1080,12 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
       return createFinding({
         ruleId: "stale-route-mention",
         severity: "medium",
-        title: routeMissingTitle({ isFastApi, isFlask, isDjango, isExpress, isNextJs }),
+        title: routeMissingTitle({ isFastApi, isFlask, isDjango, isExpress, isNestJs, isNextJs }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isFlask || isDjango || isExpress
+          isFastApi || isFlask || isDjango || isExpress || isNestJs
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1098,6 +1099,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
           isFlask,
           isDjango,
           isExpress,
+          isNestJs,
           isNextJs
         }),
         falsePositiveNote:
@@ -1111,6 +1113,7 @@ function routeMissingTitle(input: {
   isFlask: boolean;
   isDjango: boolean;
   isExpress: boolean;
+  isNestJs: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1129,6 +1132,10 @@ function routeMissingTitle(input: {
     return "Documented Express route was not found";
   }
 
+  if (input.isNestJs) {
+    return "Documented NestJS route was not found";
+  }
+
   if (input.isNextJs) {
     return "Documented Next.js route was not found";
   }
@@ -1142,6 +1149,7 @@ function routeMissingSuggestion(input: {
   isFlask: boolean;
   isDjango: boolean;
   isExpress: boolean;
+  isNestJs: boolean;
   isNextJs: boolean;
 }): string {
   if (input.isFastApi) {
@@ -1158,6 +1166,10 @@ function routeMissingSuggestion(input: {
 
   if (input.isExpress) {
     return "Update the route mention or add the missing Express route.";
+  }
+
+  if (input.isNestJs) {
+    return "Update the route mention or add the missing NestJS controller route.";
   }
 
   if (input.isNextJs) {
@@ -1874,20 +1886,36 @@ async function extractRouteFacts(
 
     if ([".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs"].includes(extname(file.path).toLowerCase())) {
       const text = await readTextForFact(root, file.path, warnings);
-      if (text === undefined || !looksLikeExpressSource(text)) {
+      if (text === undefined) {
         continue;
       }
 
-      for (const route of extractExpressRoutes(text)) {
-        facts.push(
-          createCodeFact({
-            kind: "route_exists",
-            value: route.path,
-            sourcePath: file.path,
-            lineNumber: route.lineNumber,
-            metadata: { framework: "express", method: route.method }
-          })
-        );
+      if (looksLikeExpressSource(text)) {
+        for (const route of extractExpressRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "express", method: route.method }
+            })
+          );
+        }
+      }
+
+      if (looksLikeNestJsSource(text)) {
+        for (const route of extractNestJsRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "nestjs", method: route.method }
+            })
+          );
+        }
       }
     }
   }
@@ -2154,6 +2182,41 @@ function extractExpressRouterPrefixes(text: string): Map<string, string> {
   }
 
   return prefixes;
+}
+
+function looksLikeNestJsSource(text: string): boolean {
+  return /@nestjs\/common/.test(text) && /@Controller\(/.test(text);
+}
+
+function extractNestJsRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  let controllerPrefix = "";
+  const controllerPattern = /@Controller\(\s*(?:["'`]([^"'`]*)["'`])?\s*\)/g;
+  const routePattern =
+    /@(Get|Post|Put|Patch|Delete|Options|Head|All)\(\s*(?:["'`]([^"'`]*)["'`])?\s*\)/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    controllerPattern.lastIndex = 0;
+    const controllerMatch = controllerPattern.exec(line);
+    if (controllerMatch) {
+      controllerPrefix = controllerMatch[1] ?? "";
+      continue;
+    }
+
+    routePattern.lastIndex = 0;
+    const routeMatch = routePattern.exec(line);
+    if (routeMatch?.[1]) {
+      routes.push({
+        method: routeMatch[1].toLowerCase(),
+        path: combineRouteParts(controllerPrefix, routeMatch[2] ?? ""),
+        lineNumber: lineIndex + 1
+      });
+    }
+  }
+
+  return routes;
 }
 
 function extractWorkflowRunCommands(text: string): Array<{ command: string; lineNumber: number }> {

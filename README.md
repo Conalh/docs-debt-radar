@@ -208,6 +208,7 @@ pnpm test
 pnpm build
 pnpm pack:dry-run
 pnpm smoke:packed
+pnpm release:check
 ```
 
 Project layout:

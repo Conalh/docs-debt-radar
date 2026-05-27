@@ -48,15 +48,20 @@ SARIF output keeps docs debt as documentation findings, not security findings. H
 
 ## Release Checklist
 
-1. Run `pnpm format`.
-2. Run `pnpm lint`.
-3. Run `pnpm typecheck`.
-4. Run `pnpm test`.
-5. Run `pnpm pack:dry-run`.
-6. Run `pnpm smoke:packed`.
-7. Update `CHANGELOG.md` for the release version.
-8. Create a signed release tag such as `v1`.
-9. Publish `@docs-debt-radar/core` before `@docs-debt-radar/cli`.
+Run the release gate before tagging:
+
+```bash
+pnpm release:check
+```
+
+The release gate verifies package versions, the changelog section, a clean tracked worktree, formatting, linting, typechecking, tests, build output, package contents, and the packed CLI smoke.
+
+1. Update all package versions to the target semver.
+2. Update `CHANGELOG.md` with a matching `## <version>` section.
+3. Run `pnpm release:check`.
+4. Create a signed release tag such as `v0.1.0`.
+5. Push the tag and let the Release workflow re-run `pnpm release:check`.
+6. Publish `@docs-debt-radar/core` before `@docs-debt-radar/cli`.
 
 Do not publish until a real npm token and release remote are configured.
 

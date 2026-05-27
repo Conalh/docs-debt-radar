@@ -15,6 +15,7 @@
     "format:write": "prettier --write .",
     "lint": "eslint .",
     "pack:dry-run": "node scripts/pack-dry-run.mjs",
+    "release:check": "node scripts/release-check.mjs",
     "smoke:packed": "node scripts/smoke-packed-cli.mjs",
     "test": "vitest run",
     "typecheck": "pnpm -r typecheck"

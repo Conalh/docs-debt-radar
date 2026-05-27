@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 
 import { describe, expect, it } from "vitest";
 
@@ -47,11 +48,32 @@ describe("release readiness", () => {
 
     expect(rootPackage.scripts).toMatchObject({
       "pack:dry-run": "node scripts/pack-dry-run.mjs",
+      "release:check": "node scripts/release-check.mjs",
       "smoke:packed": "node scripts/smoke-packed-cli.mjs"
     });
     expect(releaseDocs).toContain("Node.js 22");
     expect(releaseDocs).toContain("npm pack --dry-run");
+    expect(releaseDocs).toContain("pnpm release:check");
     expect(releaseDocs).toContain("clean machine");
+  });
+
+  it("validates release metadata before running expensive release checks", () => {
+    const result = spawnSync(process.execPath, ["scripts/release-check.mjs", "--metadata-only"], {
+      cwd: root,
+      encoding: "utf8"
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Release metadata OK for 0.0.0");
+  });
+
+  it("defines a tag-triggered release verification workflow", async () => {
+    const workflow = await readFile(join(root, ".github/workflows/release.yml"), "utf8");
+
+    expect(workflow).toContain("name: Release");
+    expect(workflow).toContain("tags:");
+    expect(workflow).toContain('- "v*"');
+    expect(workflow).toContain("pnpm release:check");
   });
 });
 

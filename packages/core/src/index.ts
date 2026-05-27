@@ -1065,6 +1065,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
   const routeValues = new Set(routeFacts.map((fact) => fact.value));
   const routeList = formatList([...routeValues].sort(compareRouteDisplayValues));
   const isFastApi = routeFacts.some((fact) => fact.metadataJson.framework === "fastapi");
+  const isFlask = routeFacts.some((fact) => fact.metadataJson.framework === "flask");
   const isExpress = routeFacts.some((fact) => fact.metadataJson.framework === "express");
 
   return claims
@@ -1075,12 +1076,12 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
       return createFinding({
         ruleId: "stale-route-mention",
         severity: "medium",
-        title: routeMissingTitle({ isFastApi, isExpress }),
+        title: routeMissingTitle({ isFastApi, isFlask, isExpress }),
         body: evidenceBody(
           isFastApi
             ? `${claim.documentPath} documents endpoint \`${claim.normalizedValue}\`.`
             : `${claim.documentPath} tells users to open \`${claim.normalizedValue}\`.`,
-          isFastApi || isExpress
+          isFastApi || isFlask || isExpress
             ? `${sourceFile} defines ${routeList}, but not \`${claim.normalizedValue}\`.`
             : `The fixture defines ${routeList}, but not \`${claim.normalizedValue}\`.`
         ),
@@ -1091,6 +1092,7 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
         suggestedEdit: routeMissingSuggestion({
           route: claim.normalizedValue,
           isFastApi,
+          isFlask,
           isExpress
         }),
         falsePositiveNote:
@@ -1099,9 +1101,17 @@ function findStaleRoutes(claims: readonly Claim[], facts: readonly CodeFact[]): 
     });
 }
 
-function routeMissingTitle(input: { isFastApi: boolean; isExpress: boolean }): string {
+function routeMissingTitle(input: {
+  isFastApi: boolean;
+  isFlask: boolean;
+  isExpress: boolean;
+}): string {
   if (input.isFastApi) {
     return "Documented FastAPI route was not found";
+  }
+
+  if (input.isFlask) {
+    return "Documented Flask route was not found";
   }
 
   if (input.isExpress) {
@@ -1114,10 +1124,15 @@ function routeMissingTitle(input: { isFastApi: boolean; isExpress: boolean }): s
 function routeMissingSuggestion(input: {
   route: string;
   isFastApi: boolean;
+  isFlask: boolean;
   isExpress: boolean;
 }): string {
   if (input.isFastApi) {
     return "Update the API docs or add the missing FastAPI route.";
+  }
+
+  if (input.isFlask) {
+    return "Update the route mention or add the missing Flask route.";
   }
 
   if (input.isExpress) {
@@ -1755,6 +1770,20 @@ async function extractRouteFacts(
           })
         );
       }
+
+      if (looksLikeFlaskSource(text)) {
+        for (const route of extractFlaskRoutes(text)) {
+          facts.push(
+            createCodeFact({
+              kind: "route_exists",
+              value: route.path,
+              sourcePath: file.path,
+              lineNumber: route.lineNumber,
+              metadata: { framework: "flask", method: route.method }
+            })
+          );
+        }
+      }
       continue;
     }
 
@@ -1905,6 +1934,27 @@ function extractFastApiRoutes(
     const match = routePattern.exec(line);
     if (match?.[1] && match[2]) {
       routes.push({ method: match[1], path: match[2], lineNumber: lineIndex + 1 });
+    }
+  }
+
+  return routes;
+}
+
+function looksLikeFlaskSource(text: string): boolean {
+  return /\bfrom\s+flask\s+import\b|\bimport\s+flask\b/.test(text);
+}
+
+function extractFlaskRoutes(
+  text: string
+): Array<{ method: string; path: string; lineNumber: number }> {
+  const routes: Array<{ method: string; path: string; lineNumber: number }> = [];
+  const routePattern = /@\w+\.route\(\s*["']([^"']+)["']/g;
+
+  for (const [lineIndex, line] of text.split(/\r?\n/).entries()) {
+    routePattern.lastIndex = 0;
+    const match = routePattern.exec(line);
+    if (match?.[1]) {
+      routes.push({ method: "route", path: match[1], lineNumber: lineIndex + 1 });
     }
   }
 

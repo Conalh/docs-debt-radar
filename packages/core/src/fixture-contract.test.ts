@@ -59,6 +59,7 @@ const requiredProjectTypes = [
   "node",
   "nextjs",
   "fastapi",
+  "flask",
   "express",
   "github-actions",
   "docs-assets-env"
@@ -87,7 +88,8 @@ describe("fixture contract", () => {
       "express-route-drift",
       "github-actions-drift",
       "nextjs-route-drift",
-      "python-fastapi-drift"
+      "python-fastapi-drift",
+      "python-flask-drift"
     ]);
 
     for (const projectType of requiredProjectTypes) {

@@ -125,9 +125,10 @@ describe("scanRepositoryFacts", () => {
     );
   });
 
-  it("extracts Next.js, FastAPI, and Express route facts", async () => {
+  it("extracts Next.js, FastAPI, Flask, and Express route facts", async () => {
     const nextResult = await scanRepositoryFacts({ root: fixturePath("nextjs-route-drift") });
     const fastApiResult = await scanRepositoryFacts({ root: fixturePath("python-fastapi-drift") });
+    const flaskResult = await scanRepositoryFacts({ root: fixturePath("python-flask-drift") });
     const expressResult = await scanRepositoryFacts({ root: fixturePath("express-route-drift") });
 
     expect(
@@ -173,6 +174,33 @@ describe("scanRepositoryFacts", () => {
           sourcePath: "app/main.py",
           lineNumber: 9,
           metadataJson: { framework: "fastapi", method: "get" }
+        }
+      ])
+    );
+
+    expect(
+      flaskResult.facts.map((fact) => ({
+        kind: fact.kind,
+        value: fact.value,
+        sourcePath: fact.sourcePath,
+        lineNumber: fact.lineNumber,
+        metadataJson: fact.metadataJson
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        {
+          kind: "route_exists",
+          value: "/health",
+          sourcePath: "app.py",
+          lineNumber: 6,
+          metadataJson: { framework: "flask", method: "route" }
+        },
+        {
+          kind: "route_exists",
+          value: "/api/users",
+          sourcePath: "app.py",
+          lineNumber: 10,
+          metadataJson: { framework: "flask", method: "route" }
         }
       ])
     );

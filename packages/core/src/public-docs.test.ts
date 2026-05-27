@@ -26,6 +26,7 @@ describe("public documentation", () => {
       "docs/examples/node.md",
       "docs/examples/nextjs.md",
       "docs/examples/fastapi.md",
+      "docs/examples/flask.md",
       "docs/examples/express.md",
       "docs/examples/github-actions.md"
     ];

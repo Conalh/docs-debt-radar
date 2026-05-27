@@ -11,7 +11,7 @@ V1 should prove that documentation drift can be detected with local, evidence-ba
 - Package script validation for common `npm`, `pnpm`, and `yarn` command forms.
 - Env var comparison between docs, env examples, and source references.
 - GitHub Actions workflow command checks for referenced package scripts and files.
-- Route mention validation for Next.js App Router, Next.js Pages Router, FastAPI decorators, and literal Express route calls.
+- Route mention validation for Next.js App Router, Next.js Pages Router, FastAPI decorators, Flask decorators, and literal Express route calls.
 - Text, Markdown, and JSON reports.
 - CLI exit codes.
 - GitHub Action report mode and explicit fail thresholds.
@@ -46,6 +46,7 @@ The initial fixture set covers:
 - Basic Node package drift.
 - Next.js route drift.
 - FastAPI route and env drift.
+- Flask route drift.
 - Express route drift.
 - GitHub Actions workflow script drift.
 - Documentation asset, anchor, and env-var drift.

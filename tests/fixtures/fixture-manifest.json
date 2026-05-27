@@ -54,6 +54,14 @@
       ]
     },
     {
+      "id": "python-flask-drift",
+      "description": "A minimal Flask app with documented existing and stale routes.",
+      "projectTypes": ["flask"],
+      "expectedReport": "expected-report.json",
+      "coversFailingRules": ["stale-route-mention"],
+      "coversPassingRules": ["stale-route-mention"]
+    },
+    {
       "id": "express-route-drift",
       "description": "A minimal Express app with documented existing and stale routes.",
       "projectTypes": ["express"],

@@ -36,6 +36,7 @@ const fixtureIds = [
   "github-actions-drift",
   "nextjs-route-drift",
   "python-fastapi-drift",
+  "python-flask-drift",
   "express-route-drift"
 ];
 
